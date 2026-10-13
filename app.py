@@ -8,23 +8,56 @@ st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠
 
 st.markdown("""
 <style>
-.block-container{max-width:1150px;padding-top:1.4rem}
-.t-header{display:flex;align-items:center;gap:20px;padding:20px 24px;border-radius:22px;background:linear-gradient(112deg,#101d31,#243d70 75%,#844c47);box-shadow:0 12px 30px #101d3130;margin-bottom:22px}
-
-.t-title{font-size:clamp(27px,4vw,48px);font-weight:900;color:#fff;line-height:1.2;margin:0}
-.t-title span{color:#ffad56}
-.t-sub{color:#eef2fa;font-size:14px;line-height:1.5;margin-top:6px}
-.t-tag{display:inline-block;padding:6px 12px;background:#f36c21;border-radius:16px;color:#fff;font-size:12px;font-weight:700;margin-top:10px}
-[data-testid="stVerticalBlockBorderWrapper"]{border-radius:16px}
-div.stLinkButton a{border-radius:10px;font-weight:700}
-@media(max-width:700px){.t-header{padding:12px;gap:12px}.t-sub{font-size:12px}}
+.block-container{max-width:1150px;padding-top:1.3rem;padding-bottom:2.5rem}
+.t-header{
+  position:relative;overflow:hidden;isolation:isolate;
+  padding:30px 36px;border-radius:25px;margin:0 0 24px;
+  background:linear-gradient(118deg,#0c244e 0%,#154984 45%,#2768a4 72%,#ef7526 130%);
+  box-shadow:0 14px 32px rgba(17,51,95,.23);
+  border:1px solid rgba(255,255,255,.18);
+}
+.t-header:before{
+  content:"";position:absolute;right:-70px;top:-110px;
+  width:360px;height:360px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,178,74,.49),rgba(255,178,74,0) 70%);
+  z-index:-1;
+}
+.t-header:after{
+  content:"";position:absolute;left:28%;bottom:-135px;
+  width:430px;height:250px;border-radius:50%;transform:rotate(-17deg);
+  background:radial-gradient(ellipse,rgba(141,209,255,.22),transparent 72%);
+  z-index:-1;
+}
+.t-title{font-size:clamp(32px,4.1vw,55px);font-weight:900;line-height:1.17;margin:0 0 10px;color:white;letter-spacing:-.6px;text-shadow:0 3px 13px rgba(5,21,46,.27)}
+.t-title .brand{color:#fff}
+.t-title .ai{color:#ffce69;text-shadow:0 2px 16px rgba(250,147,30,.4)}
+.t-sub{font-size:clamp(13px,1.35vw,17px);font-weight:550;color:#f5f8ff;line-height:1.6;margin-top:6px;max-width:710px}
+.t-accent{color:#ffdf89;font-weight:800}
+.t-tags{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}
+.t-tag{padding:7px 13px;border-radius:999px;font-size:12px;font-weight:800;color:#fff;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.26)}
+.t-tag.orange{background:linear-gradient(120deg,#f66e20,#ffa43b);border-color:transparent}
+[data-testid="stVerticalBlockBorderWrapper"]{border-radius:17px}
+div.stLinkButton a{border-radius:12px;font-weight:750}
+h2,h3{color:#173a68}
+@media(max-width:700px){
+.t-header{padding:23px 19px;border-radius:19px}
+.t-title{font-size:clamp(27px,7vw,39px)}
+.t-tags{gap:6px}.t-tag{font-size:11px;padding:6px 9px}
+}
 </style>
 """,unsafe_allow_html=True)
-st.markdown("""<div class="t-header">
-
-<div><div class="t-title">ธนศิลป์ <span>AI Design</span></div>
-<div class="t-sub">ระบบสร้างคำสั่งออกแบบป้ายสำหรับ ChatGPT และ Gemini</div>
-<div class="t-tag">ใช้งานฟรี · ไม่ต้องใช้ API Key</div></div></div>""",unsafe_allow_html=True)
+st.markdown("""
+<section class="t-header">
+  <div class="t-title"><span class="brand">ธนศิลป์</span> <span class="ai">AI Design</span></div>
+  <div class="t-sub">เครื่องมือสร้างคำสั่งออกแบบป้าย <span class="t-accent">สวย คมชัด อ่านง่าย</span><br>
+  พร้อมนำไปสร้างภาพใน ChatGPT และ Gemini</div>
+  <div class="t-tags">
+    <span class="t-tag orange">✦ ใช้งานฟรี</span>
+    <span class="t-tag">ไม่ต้องใช้ API Key</span>
+    <span class="t-tag">ป้ายร้านค้า · งานบุญ · ราชการ · อื่น ๆ</span>
+  </div>
+</section>
+""",unsafe_allow_html=True)
 
 WORK = ['ออกแบบป้ายใหม่','แก้ไขภาพเดิม','ปรับคุณภาพ Ultra-Sharp','แปลงเป็นเวกเตอร์','ลบข้อความคงพื้นหลัง','เปลี่ยนสีและองค์ประกอบ','ปรับขนาดภาพ','สร้างพื้นหลังเปล่า','Depth Map / CNC']
 TYPES = ['ร้านค้า / อาหาร / บริการ','งานบุญ / กฐิน / วัด','ราชการ / โรงเรียน / โครงการ','งานศพ / อาลัย','เกษียณ / แสดงความยินดี','งานวิชาการ / ประชาสัมพันธ์','ป้ายชื่อหน่วยงาน','อื่น ๆ']
