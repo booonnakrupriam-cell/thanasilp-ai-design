@@ -133,61 +133,47 @@ STYLES = ['เรียบหรู มืออาชีพ','สุภาพ �
 st.markdown('<div class="th-section-h">✦ สร้างคำสั่งออกแบบป้ายด้วย AI</div>',unsafe_allow_html=True)
 st.caption('เลือกประเภทงาน ขนาดป้าย และรูปแบบ แล้วนำคำสั่งไปใช้ใน ChatGPT หรือ Gemini')
 
-left,right = st.columns([1.55,1],gap='large')
-with left:
-    with st.container(border=True):
-        first,second=st.columns(2)
-        with first:
-            section_title('1. ประเภทงาน')
-            work=st.selectbox('ประเภทงาน',WORK,label_visibility='collapsed')
-        with second:
-            section_title('2. ประเภทป้าย')
-            kind=st.selectbox('ประเภทป้าย',TYPES,label_visibility='collapsed')
+with st.container(border=True):
+    first,second=st.columns(2)
+    with first:
+        section_title('1. ประเภทงาน')
+        work=st.selectbox('ประเภทงาน',WORK,label_visibility='collapsed')
+    with second:
+        section_title('2. ประเภทป้าย')
+        kind=st.selectbox('ประเภทป้าย',TYPES,label_visibility='collapsed')
 
-        cs1,cs2=st.columns([1.15,1])
-        with cs1:
-            section_title('3. ขนาดและทิศทางป้าย')
-            direction=st.radio('ทิศทาง',['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส','ตามสัดส่วนต้นฉบับ'],horizontal=False)
-            preset=st.selectbox('ขนาดสำเร็จรูป (ซม.)',['กำหนดเอง','200 × 100','300 × 150','400 × 200','120 × 240'])
-        with cs2:
-            section_title('4. สไตล์')
-            style=st.selectbox('สไตล์',STYLES,label_visibility='collapsed')
-            st.caption('เลือกสไตล์การออกแบบให้เหมาะกับงาน')
-            st.info('แนบรูปตัวอย่างใน ChatGPT หรือ Gemini ได้โดยตรง',icon='🎨')
-        dims={'200 × 100':(200,100),'300 × 150':(300,150),'400 × 200':(400,200),'120 × 240':(120,240)}
-        if preset != 'กำหนดเอง':
-            a,b=dims[preset]
-            if direction=='แนวตั้ง' and a>b: a,b=b,a
-            if direction=='แนวนอน' and a<b: a,b=b,a
-            if direction=='สี่เหลี่ยมจัตุรัส': a=b=max(a,b)
-            if st.session_state.get('_last_preset')!=(preset,direction):
-                st.session_state['width_cm']=float(a)
-                st.session_state['height_cm']=float(b)
-                st.session_state['_last_preset']=(preset,direction)
-        cw,ch=st.columns(2)
-        with cw: w=st.number_input('กว้าง (ซม.)',min_value=1.0,value=300.0,step=10.0,key='width_cm')
-        with ch: h=st.number_input('สูง (ซม.)',min_value=1.0,value=150.0,step=10.0,key='height_cm')
-        actual='แนวนอน' if w>h else 'แนวตั้ง' if h>w else 'สี่เหลี่ยมจัตุรัส'
-        if direction in ['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส'] and direction!=actual:
-            st.warning(f'ขนาดที่กรอกเป็น{actual} แต่เลือก {direction} โปรดแก้ให้ตรงกัน')
-        section_title('5. ข้อความบนป้าย')
-        textless=st.checkbox('ไม่ใส่ข้อความ จะเพิ่มเอง')
-        wording=st.text_area('ข้อความบนป้าย',label_visibility='collapsed',height=125,disabled=textless,placeholder='พิมพ์ข้อความที่ต้องการให้ปรากฏบนป้าย')
-        section_title('6. รายละเอียดเพิ่มเติม')
-        opts=st.multiselect('ตัวเลือกพิเศษ',['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','เน้นรูปภาพ','คงโครงสร้างเดิม','ตกแต่งเพิ่มเติมอัตโนมัติ','ไม่ใส่ตาไก่','เพิ่มพื้นที่ว่างสำหรับข้อความ','คงใบหน้าบุคคลตามต้นฉบับ','ลบโลโก้เดิม'],default=['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','ตกแต่งเพิ่มเติมอัตโนมัติ'])
-        extra=st.text_area('รายละเอียดเพิ่มเติม (ถ้ามี)',height=83)
-
-with right:
-    with st.container(border=True):
-        st.markdown('<div class="th-section-h">▧ ตัวอย่างภาพสไตล์งานป้าย</div>',unsafe_allow_html=True)
-        st.markdown("""<div class="th-preview">
-            <div class="coffee-title">กาแฟสด</div>
-            <div class="coffee-sub">หอม เข้ม เต็มรสชาติ</div>
-            <div class="coffee">🥤 ☕</div>
-            <div class="price">เริ่มต้น 45.-</div>
-            </div>""",unsafe_allow_html=True)
-        st.caption('ตัวอย่างตกแต่งหน้าเว็บเท่านั้น ไม่ใช่ภาพที่สร้างขึ้นอัตโนมัติ')
-        st.info('คำสั่งจะสร้างตามข้อมูลที่กรอกด้านซ้าย จากนั้นเปิด ChatGPT หรือ Gemini เพื่อสร้างภาพจริง')
+    cs1,cs2=st.columns([1.15,1])
+    with cs1:
+        section_title('3. ขนาดและทิศทางป้าย')
+        direction=st.radio('ทิศทาง',['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส','ตามสัดส่วนต้นฉบับ'],horizontal=False)
+        preset=st.selectbox('ขนาดสำเร็จรูป (ซม.)',['กำหนดเอง','200 × 100','300 × 150','400 × 200','120 × 240'])
+    with cs2:
+        section_title('4. สไตล์')
+        style=st.selectbox('สไตล์',STYLES,label_visibility='collapsed')
+        st.caption('เลือกสไตล์การออกแบบให้เหมาะกับงาน')
+        st.info('แนบรูปตัวอย่างใน ChatGPT หรือ Gemini ได้โดยตรง',icon='🎨')
+    dims={'200 × 100':(200,100),'300 × 150':(300,150),'400 × 200':(400,200),'120 × 240':(120,240)}
+    if preset != 'กำหนดเอง':
+        a,b=dims[preset]
+        if direction=='แนวตั้ง' and a>b: a,b=b,a
+        if direction=='แนวนอน' and a<b: a,b=b,a
+        if direction=='สี่เหลี่ยมจัตุรัส': a=b=max(a,b)
+        if st.session_state.get('_last_preset')!=(preset,direction):
+            st.session_state['width_cm']=float(a)
+            st.session_state['height_cm']=float(b)
+            st.session_state['_last_preset']=(preset,direction)
+    cw,ch=st.columns(2)
+    with cw: w=st.number_input('กว้าง (ซม.)',min_value=1.0,value=300.0,step=10.0,key='width_cm')
+    with ch: h=st.number_input('สูง (ซม.)',min_value=1.0,value=150.0,step=10.0,key='height_cm')
+    actual='แนวนอน' if w>h else 'แนวตั้ง' if h>w else 'สี่เหลี่ยมจัตุรัส'
+    if direction in ['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส'] and direction!=actual:
+        st.warning(f'ขนาดที่กรอกเป็น{actual} แต่เลือก {direction} โปรดแก้ให้ตรงกัน')
+    section_title('5. ข้อความบนป้าย')
+    textless=st.checkbox('ไม่ใส่ข้อความ จะเพิ่มเอง')
+    wording=st.text_area('ข้อความบนป้าย',label_visibility='collapsed',height=125,disabled=textless,placeholder='พิมพ์ข้อความที่ต้องการให้ปรากฏบนป้าย')
+    section_title('6. รายละเอียดเพิ่มเติม')
+    opts=st.multiselect('ตัวเลือกพิเศษ',['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','เน้นรูปภาพ','คงโครงสร้างเดิม','ตกแต่งเพิ่มเติมอัตโนมัติ','ไม่ใส่ตาไก่','เพิ่มพื้นที่ว่างสำหรับข้อความ','คงใบหน้าบุคคลตามต้นฉบับ','ลบโลโก้เดิม'],default=['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','ตกแต่งเพิ่มเติมอัตโนมัติ'])
+    extra=st.text_area('รายละเอียดเพิ่มเติม (ถ้ามี)',height=83)
 
 prompt='\n'.join([
     'เริ่มออกแบบป้ายตามรายละเอียดนี้',
