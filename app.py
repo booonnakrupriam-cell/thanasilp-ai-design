@@ -104,6 +104,8 @@ def pick_font(px):
         '/usr/share/fonts/truetype/noto/NotoSansThai-Regular.ttf',
         '/usr/share/fonts/truetype/thai/Garuda.ttf',
         '/usr/share/fonts/truetype/tlwg/Garuda.ttf',
+        '/usr/share/fonts/truetype/tlwg/Loma.ttf',
+        '/usr/share/fonts/truetype/tlwg/Kinnari.ttf',
         'C:/Windows/Fonts/tahoma.ttf',
         'C:/Windows/Fonts/LeelawUI.ttf',
     ]
@@ -183,7 +185,7 @@ def make_free_banner():
         im.alpha_composite(lim,(max(0,x),max(0,y)))
 
     headline='' if textless else (wording.strip() or '')
-    label='ข้อความป้าย' if not headline and not textless else headline
+    label=headline  # ถ้าไม่ได้กรอกข้อความ ให้เว้นพื้นที่ว่าง ไม่แสดงคำหลอก
     # จำกัดพื้นที่ข้อความเพื่อไม่ให้ทับรูปและโลโก้
     text_x=margin+int(out_w*.03)
     text_w=int(out_w*.56) if primary and position!='พื้นหลังเต็มป้าย' else out_w-2*text_x
