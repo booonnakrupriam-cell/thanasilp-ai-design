@@ -70,9 +70,9 @@ line_html = (
 st.markdown("""
 <section class="t-header">
   <div class="t-title"><span class="brand">ธนศิลป์</span> <span class="ai">AI Design</span></div>
+  <div class="t-sub">เครื่องมือสร้างคำสั่งออกแบบป้าย <span class="t-accent">สวย คมชัด อ่านง่าย</span><br>พร้อมนำไปสร้างภาพใน ChatGPT และ Gemini</div>
   <div class="t-shop-offer">รับพิมพ์งานสิ่งพิมพ์ทุกชนิด <strong>จัดส่งทั่วไทย</strong></div>
   <div class="t-shop-contact">สอบถามราคา <a href="tel:0913675929">091-367-5929</a></div>
-  <div class="t-sub">เครื่องมือสร้างคำสั่งออกแบบป้าย <span class="t-accent">สวย คมชัด อ่านง่าย</span><br>พร้อมนำไปสร้างภาพใน ChatGPT และ Gemini</div>
   <div class="t-shop-buttons">
     <a class="t-contact-call" href="tel:0913675929">📞 โทรสอบถามราคา</a>
     """ + line_html + """
