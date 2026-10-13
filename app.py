@@ -6,9 +6,23 @@ import html
 from urllib.parse import quote
 
 st.set_page_config(page_title='ธนศิลป์ AI Design',page_icon='🎨',layout='wide')
-st.markdown('''<style>.block-container{max-width:1150px;padding-top:1.5rem}h1{color:#173a68}div.stButton>button[kind="primary"]{background:#16447c;border:0} </style>''',unsafe_allow_html=True)
-st.title('🎨 ธนศิลป์ AI Design')
-st.caption('ระบบสร้างคำสั่งออกแบบป้ายสำหรับ ChatGPT • ไม่ต้องเลือกสีหรืออัปโหลดรูปในเว็บ • ไม่ต้องใช้ API Key')
+st.markdown("""<style>
+.block-container{max-width:1150px;padding-top:1.5rem}
+.t-header{display:flex;align-items:center;gap:20px;padding:19px 24px;border-radius:22px;background:linear-gradient(115deg,#11243d,#244579 65%,#f36c21 155%);box-shadow:0 10px 28px #091d3830;margin-bottom:20px}
+.t-logo{height:110px;width:110px;border-radius:17px;object-fit:cover;border:3px solid white;box-shadow:0 4px 14px #0005}
+.t-name{font-weight:900;font-size:clamp(27px,4vw,48px);color:white;line-height:1.12;margin:0}
+.t-name span{color:#ffb35c}
+.t-sub{color:#eef2fc;font-size:14px;margin-top:9px;line-height:1.5}
+.t-pill{display:inline-block;margin-top:9px;color:#fff;background:#f36c21;border-radius:30px;padding:5px 12px;font-size:12px;font-weight:700}
+div.stButton>button[kind="primary"]{background:#f36c21;border:0}
+div.stLinkButton a{border-radius:12px;font-weight:700}
+@media(max-width:600px){.t-header{padding:14px;gap:12px}.t-logo{height:76px;width:76px}.t-sub{font-size:12px}}
+</style>""",unsafe_allow_html=True)
+st.markdown("""<section class="t-header">
+<img class="t-logo" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA8LDA0MCg8NDA0REA8SFyYZFxUVFy8iJBwmODE7OjcxNjU9RVhLPUFUQjU2TWlOVFteY2RjPEpsdGxgc1hhY1//2wBDARARERcUFy0ZGS1fPzY/X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX1//wAARCABWAFYDASIAAhEBAxEB/8QAGwAAAgMBAQEAAAAAAAAAAAAAAAMCBAUBBgf/xAA3EAACAQMDAQUFBgUFAAAAAAABAgMABBESITEFE0FRYXEGIpGxwTJDUlNygRQjQmLiBxaCodH/xAAZAQACAwEAAAAAAAAAAAAAAAACAwABBAX/xAApEQADAAEDAwMCBwAAAAAAAAAAAQIRAyExBCKxEhNBI+FRYXGBkcHw/9oADAMBAAIRAxEAPwDxwpqUsUxRTECOUZxTVFQTbFOiie4fs48DAyzHhR4mj4KOxRPPJoTAAGWY8KPE1aFnq2hMxfuWWLRr/Tud/I02SSOxhWOJcud1VuSfxN9B3fE1VtricOwkdpix95GPI/t86R7l1vC28mj2ona3h+P1BMGp6atyRC6AmgOqRuD+Z/l8/XmsuCNqfFq1lCbhw8MU44xUGByBjanstRIosACCN8UV0hWY+IoqiGWKYppYp9vA9zL2ceAAMs54UeJpYQ62je4k0R4GBlmPCjxNasjLZQdnAmpwNeG2/wCb/Qd3xNczFZRrBFpDn3h2hxj+9/oO74mi0WFz2ssq6M6lDsMufxN9B3Vj1tb1cceToaGh6Xvz4+5Wjs7xz20kZZm3JJGa5LE64EiMjdxIrc7RCuoOpHjmuM8LKVZ0IPcSKXHW2tnOw6+g03xW5kRTvGxJGosffT8fmPOrzIt0omhOqRuD+Z/l8/XmpdQxxuOzcENwAckGlxXJhkYMu2PfQ7avMeBrVz9TTMT2+lqfz+H2Gk5G1LarkqC6UTQnVI3B/M/y+frzQLalJFaYtWsozXDh4ZE0Uos+ngZoqwSjbQSXMnZx4AAyztwo8TWzLLD0y3WOJcyHdVbkn8bfQd3xNZ/SZFJMGf5hlSRV/M05yvrvkeOPSjqUEkd005OuKY5V/pWS+6lD48mrT7Ydrnx+Yg6pXaSVtTsckmr/AEmyiuJnklUMkf8ASe81ng7V6D2XWOTtEmcpGZN2HdtV9Q3On2k6ZKtXNb/I+66hP0pre5tcAq+ChHusuODXsrLrfSru1jnaaGBmG8crBWU/v868l1O3MN70tWKuslyjAjgjNefkPaXEryMXcucltyd6DpZ+nhh9ZSerlH1Yp0zqcbJi2uk79OGx8OK851PpUVvPFZ3eZbC5bRBO28ltJ3DV3qfOvJ2d1L0+8hurZirowyAftDvBr6P7TRiXoF2ce8iiRT4EEEU9rDMqeT5zHJLZ3MsMqlnVykkfc2Nsjz2q5PELpRNA2qRuD+Z5fr+frzS6hL/E9Qu5kBOqV3BHhnmuWkiSW88b3Co8jA5OwQDlvX03oalw1U/uOilcuK+OBeRRXLmdZ7maVBpV3LAeRNFaMmYyOa3LC+W8U210NcrbEH73z/X8/XnCBrtIqVSwxsW4eUaF5ataMCDrgf7D/Q+dbnsm8qW97LFuFB1DGdiAPrWfYXy3im1uhrlbYg/e+f6/n684lcoalUsMKLcPKL17aNaOCp1wP9h/ofOrnQ7S1uHlur6WIQW5XMbvp1Zzvzkgd+KlYXy3qG1u11ytsQfvfT+/5+vK4LHp+qVu3aYIDnUpURebHx8uc0tXU9tLI16c33S8f0alzMs11/ECO3trKCMxn+WEL7545znYA4JH71gXV3JeSB5Aqqv2UQYAqF1dzXbKJZWkVMhWYYLeZ8+KTmnIQMzXM1DVXM1ZRMmil5oqEE1IUUUJZLNFFFWQ7imzXVzOgSe5llVeFdyQKKKhQrO1GaKKhDmaM0UVCwoooqEP/Z" alt="โลโก้ร้านธนศิลป์ ดีไซน์"/>
+<div><div class="t-name">ธนศิลป์ <span>AI Design</span></div>
+<div class="t-sub">ระบบสร้างคำสั่งออกแบบป้ายสำหรับ ChatGPT และ Gemini</div>
+<div class="t-pill">ใช้งานฟรี • ไม่ต้องใช้ API Key</div></div></section>""",unsafe_allow_html=True)
 
 WORK=['ออกแบบป้ายใหม่','แก้ไขภาพเดิม','ปรับคุณภาพ Ultra-Sharp','แปลงเป็นเวกเตอร์','ลบข้อความคงพื้นหลัง','เปลี่ยนสีและองค์ประกอบ','ปรับขนาดภาพ','สร้างพื้นหลังเปล่า','Depth Map / CNC']
 TYPES=['ร้านค้า / อาหาร / บริการ','งานบุญ / กฐิน / วัด','ราชการ / โรงเรียน / โครงการ','งานศพ / อาลัย','เกษียณ / แสดงความยินดี','งานวิชาการ / ประชาสัมพันธ์','ป้ายชื่อหน่วยงาน','อื่น ๆ']
