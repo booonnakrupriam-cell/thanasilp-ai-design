@@ -155,3 +155,59 @@ with col_gemini:
 
 st.info('วิธีใช้: **ChatGPT** เปิดพร้อมคำสั่ง (หากระบบรองรับ) แล้วตรวจและกดส่ง • **Gemini** กดคัดลอก+เปิด → Ctrl+V → แนบรูป/โลโก้ → กดส่ง')
 st.caption('เว็บไซต์นี้สร้างคำสั่งเท่านั้น ไม่ส่งไฟล์เข้าห้องแชทอัตโนมัติ และไม่ใช้ OpenAI API')
+
+
+st.divider()
+st.subheader('8. 🛍️ สั่งออกแบบ / สั่งพิมพ์ป้ายกับร้านธนศิลป์ ดีไซน์')
+st.markdown('กรอกข้อมูลด้านล่างเพื่อทำ **ใบสรุปคำสั่งซื้อ** แล้วคัดลอกส่งให้ร้านทาง LINE ได้โดยตรง')
+st.caption('เว็บไซต์นี้ไม่เก็บคำสั่งซื้อในฐานข้อมูลและไม่ส่งข้อมูลไปหาร้านโดยอัตโนมัติ ลูกค้าต้องส่งใบสั่งงานใน LINE ด้วยตนเอง')
+
+with st.container(border=True):
+    order_type = st.selectbox('ประเภทบริการ', ['ออกแบบป้าย', 'ออกแบบและพิมพ์ป้าย', 'พิมพ์ป้ายจากไฟล์ที่มี', 'แก้ไขไฟล์เดิม', 'สอบถามราคาก่อนสั่ง'])
+    oc1,oc2=st.columns(2)
+    with oc1:
+        customer_name=st.text_input('ชื่อลูกค้า / ชื่อหน่วยงาน', key='order_customer', placeholder='ชื่อผู้ติดต่อ')
+    with oc2:
+        customer_phone=st.text_input('เบอร์โทรติดต่อ', key='order_phone', placeholder='เช่น 08XXXXXXXX')
+    order_note=st.text_area('รายละเอียดงานและข้อกำหนดเพิ่มเติม', height=105, key='order_note',
+                             placeholder='เช่น จำนวนป้าย วัสดุ สถานที่รับงาน กำหนดส่ง หรือรายละเอียดที่ต้องการให้ร้านประเมิน')
+    order_deadline=st.text_input('วันที่ต้องการรับงาน (ถ้ามี)', placeholder='เช่น 25 ต.ค. 2569',key='order_deadline')
+    use_current_design=st.checkbox('นำรายละเอียดป้ายจากแบบฟอร์มด้านบนมาใช้ในใบสั่งงาน',value=True)
+
+order_lines=[
+    'ใบสั่งงาน / ขอใบเสนอราคา - ร้านธนศิลป์ ดีไซน์',
+    f'บริการ: {order_type}',
+    f'ผู้ติดต่อ: {customer_name.strip() or "ยังไม่ระบุ"}',
+    f'เบอร์โทร: {customer_phone.strip() or "ยังไม่ระบุ"}',
+    f'วันที่ต้องการรับงาน: {order_deadline.strip() or "ยังไม่ระบุ"}',
+]
+if use_current_design:
+    order_lines.extend([
+        f'ประเภทงาน: {work}', f'ประเภทป้าย: {kind}',
+        f'ขนาดป้าย: {w:g} × {h:g} ซม.',
+        f'รูปแบบ: {actual}', f'สไตล์: {style}',
+        f'ข้อความบนป้าย: {"ไม่มีข้อความ" if textless else (wording.strip() or "ยังไม่ระบุ")}',
+    ])
+order_lines.extend([
+    f'รายละเอียดเพิ่มเติม: {order_note.strip() or "ไม่มี"}',
+    'หมายเหตุ: โปรดแจ้งราคาหรือยืนยันคิวก่อนเริ่มดำเนินงาน',
+])
+order_summary='\n'.join(order_lines)
+st.markdown('**ใบสรุปสำหรับส่งร้าน**')
+st.code(order_summary, language=None,wrap_lines=True)
+st.download_button('⬇️ ดาวน์โหลดใบสั่งงาน .txt',order_summary.encode('utf-8-sig'),
+                   file_name='thanasilp_order.txt',mime='text/plain',use_container_width=True)
+
+# Set an official LINE contact URL via Streamlit Secrets; never store customer data in query strings.
+try:
+    line_url=st.secrets.get('LINE_CONTACT_URL','')
+except Exception:
+    line_url=''
+line_url=str(line_url).strip()
+line_valid=line_url.startswith(('https://line.me/','https://lin.ee/','https://page.line.me/','https://liff.line.me/'))
+if line_valid:
+    st.link_button('💬 เปิด LINE ติดต่อร้านธนศิลป์ ดีไซน์',line_url,use_container_width=True)
+    st.info('วิธีส่งออเดอร์: กดคัดลอกข้อความจากกรอบใบสั่งงานด้านบน → กดเปิด LINE → วางข้อความในแชทร้าน → แนบรูปตัวอย่าง/ไฟล์ที่ต้องการ → กดส่ง')
+else:
+    st.warning('ยังไม่ได้ตั้งค่าลิงก์ LINE ของร้าน จึงยังไม่แสดงปุ่มติดต่อ เพื่อป้องกันการส่งออเดอร์ผิดบัญชี')
+    st.caption('เจ้าของร้าน: ไปที่ Streamlit Community Cloud → Manage app → Settings → Secrets แล้วเพิ่มบรรทัด LINE_CONTACT_URL = "https://lin.ee/รหัสจริงของร้าน"')
