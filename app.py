@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image
 from io import BytesIO
 import json
+from urllib.parse import quote
 
 st.set_page_config(page_title='ธนศิลป์ AI Design',page_icon='🎨',layout='wide')
 st.markdown('''<style>.block-container{max-width:1150px;padding-top:1.5rem}h1{color:#173a68}div.stButton>button[kind="primary"]{background:#16447c;border:0} </style>''',unsafe_allow_html=True)
@@ -73,6 +74,7 @@ prompt='\n'.join(lines)
 st.subheader('9. คำสั่งพร้อมใช้')
 st.code(prompt,language=None)
 st.download_button('⬇️ ดาวน์โหลดคำสั่ง .txt',data=prompt.encode('utf-8-sig'),file_name='thanasilp_prompt.txt',mime='text/plain',use_container_width=True)
-st.link_button('🔗 เปิด ChatGPT เพื่อวางคำสั่งและแนบรูป', 'https://chatgpt.com/',use_container_width=True)
-st.info('วิธีใช้ฟรี: คัดลอกข้อความคำสั่งด้านบน → เปิด ChatGPT → วางคำสั่ง → กด + แนบไฟล์ภาพหลัก/โลโก้/ตัวอย่างที่เลือกไว้ แล้วส่งข้อความเพื่อสร้างภาพตามสิทธิ์บัญชี ChatGPT ของคุณ')
+st.link_button('🚀 ส่งคำสั่งไป ChatGPT (เปิดพร้อมข้อความ)', 'https://chatgpt.com/?q=' + quote(prompt, safe=''), use_container_width=True)
+st.caption('เมื่อ ChatGPT เปิดขึ้นมา ให้ตรวจข้อความแล้วกดส่งอีกครั้ง หากไม่มีข้อความปรากฏ ให้คัดลอกคำสั่งจากด้านบนไปวางเอง')
+st.info('วิธีใช้ฟรี: กดปุ่มส่งคำสั่งไป ChatGPT → ตรวจคำสั่งแล้วกดส่ง หากมีรูปภาพหลัก/โลโก้/ตัวอย่าง ให้กด + แนบไฟล์ใน ChatGPT เอง ระบบยังไม่สามารถย้ายรูปจากเว็บไปได้อัตโนมัติ')
 st.caption('เวอร์ชันนี้ยังไม่เชื่อม API และไม่สามารถส่งไฟล์เข้า ChatGPT ให้เองโดยอัตโนมัติ การทำเช่นนั้นต้องพัฒนาการเชื่อมต่อเพิ่ม')
