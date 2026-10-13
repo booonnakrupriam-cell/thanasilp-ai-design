@@ -1,5 +1,4 @@
 import html
-from pathlib import Path
 from urllib.parse import quote
 
 import streamlit as st
@@ -11,24 +10,18 @@ st.markdown("""
 <style>
 .block-container{max-width:1150px;padding-top:1.4rem}
 .t-header{display:flex;align-items:center;gap:20px;padding:20px 24px;border-radius:22px;background:linear-gradient(112deg,#101d31,#243d70 75%,#844c47);box-shadow:0 12px 30px #101d3130;margin-bottom:22px}
-.t-logo{width:142px;height:142px;object-fit:contain;border:3px solid #fff;border-radius:18px;box-shadow:0 6px 18px #0006;background:#18253b;flex-shrink:0}
+
 .t-title{font-size:clamp(27px,4vw,48px);font-weight:900;color:#fff;line-height:1.2;margin:0}
 .t-title span{color:#ffad56}
 .t-sub{color:#eef2fa;font-size:14px;line-height:1.5;margin-top:6px}
 .t-tag{display:inline-block;padding:6px 12px;background:#f36c21;border-radius:16px;color:#fff;font-size:12px;font-weight:700;margin-top:10px}
 [data-testid="stVerticalBlockBorderWrapper"]{border-radius:16px}
 div.stLinkButton a{border-radius:10px;font-weight:700}
-@media(max-width:700px){.t-header{padding:12px;gap:12px}.t-logo{width:90px;height:90px}.t-sub{font-size:12px}}
+@media(max-width:700px){.t-header{padding:12px;gap:12px}.t-sub{font-size:12px}}
 </style>
 """,unsafe_allow_html=True)
-import base64
-logo_path=Path(__file__).parent / "assets" / "logo.png"
-if logo_path.exists():
-    logo_src="data:image/png;base64," + base64.b64encode(logo_path.read_bytes()).decode('ascii')
-else:
-    logo_src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA8LDA0MCg8NDA0REA8SFyYZFxUVFy8iJBwmODE7OjcxNjU9RVhLPUFUQjU2TWlOVFteY2RjPEpsdGxgc1hhY1//2wBDARARERcUFy0ZGS1fPzY/X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX1//wAARCABWAFYDASIAAhEBAxEB/8QAGwAAAgMBAQEAAAAAAAAAAAAAAAMCBAUBBgf/xAA3EAACAQMDAQUFBgUFAAAAAAABAgMABBESITEFE0FRYXEGIpGxwTJDUlNygRQjQmLiBxaCodH/xAAZAQACAwEAAAAAAAAAAAAAAAACAwABBAX/xAApEQADAAEDAwMCBwAAAAAAAAAAAQIRAyExBCKxEhNBI+FRYXGBkcHw/9oADAMBAAIRAxEAPwDxwpqUsUxRTECOUZxTVFQTbFOiie4fs48DAyzHhR4mj4KOxRPPJoTAAGWY8KPE1aFnq2hMxfuWWLRr/Tud/I02SSOxhWOJcud1VuSfxN9B3fE1VtricOwkdpix95GPI/t86R7l1vC28mj2ona3h+P1BMGp6atyRC6AmgOqRuD+Z/l8/XmsuCNqfFq1lCbhw8MU44xUGByBjanstRIosACCN8UV0hWY+IoqiGWKYppYp9vA9zL2ceAAMs54UeJpYQ62je4k0R4GBlmPCjxNasjLZQdnAmpwNeG2/wCb/Qd3xNczFZRrBFpDn3h2hxj+9/oO74mi0WFz2ssq6M6lDsMufxN9B3Vj1tb1cceToaGh6Xvz4+5Wjs7xz20kZZm3JJGa5LE64EiMjdxIrc7RCuoOpHjmuM8LKVZ0IPcSKXHW2tnOw6+g03xW5kRTvGxJGosffT8fmPOrzIt0omhOqRuD+Z/l8/XmpdQxxuOzcENwAckGlxXJhkYMu2PfQ7avMeBrVz9TTMT2+lqfz+H2Gk5G1LarkqC6UTQnVI3B/M/y+frzQLalJFaYtWsozXDh4ZE0Uos+ngZoqwSjbQSXMnZx4AAyztwo8TWzLLD0y3WOJcyHdVbkn8bfQd3xNZ/SZFJMGf5hlSRV/M05yvrvkeOPSjqUEkd005OuKY5V/pWS+6lD48mrT7Ydrnx+Yg6pXaSVtTsckmr/AEmyiuJnklUMkf8ASe81ng7V6D2XWOTtEmcpGZN2HdtV9Q3On2k6ZKtXNb/I+66hP0pre5tcAq+ChHusuODXsrLrfSru1jnaaGBmG8crBWU/v868l1O3MN70tWKuslyjAjgjNefkPaXEryMXcucltyd6DpZ+nhh9ZSerlH1Yp0zqcbJi2uk79OGx8OK851PpUVvPFZ3eZbC5bRBO28ltJ3DV3qfOvJ2d1L0+8hurZirowyAftDvBr6P7TRiXoF2ce8iiRT4EEEU9rDMqeT5zHJLZ3MsMqlnVykkfc2Nsjz2q5PELpRNA2qRuD+Z5fr+frzS6hL/E9Qu5kBOqV3BHhnmuWkiSW88b3Co8jA5OwQDlvX03oalw1U/uOilcuK+OBeRRXLmdZ7maVBpV3LAeRNFaMmYyOa3LC+W8U210NcrbEH73z/X8/XnCBrtIqVSwxsW4eUaF5ataMCDrgf7D/Q+dbnsm8qW97LFuFB1DGdiAPrWfYXy3im1uhrlbYg/e+f6/n684lcoalUsMKLcPKL17aNaOCp1wP9h/ofOrnQ7S1uHlur6WIQW5XMbvp1Zzvzkgd+KlYXy3qG1u11ytsQfvfT+/5+vK4LHp+qVu3aYIDnUpURebHx8uc0tXU9tLI16c33S8f0alzMs11/ECO3trKCMxn+WEL7545znYA4JH71gXV3JeSB5Aqqv2UQYAqF1dzXbKJZWkVMhWYYLeZ8+KTmnIQMzXM1DVXM1ZRMmil5oqEE1IUUUJZLNFFFWQ7imzXVzOgSe5llVeFdyQKKKhQrO1GaKKhDmaM0UVCwoooqEP/Z"
-st.markdown(f"""<div class="t-header">
-<img class="t-logo" src="{logo_src}" alt="โลโก้ร้านธนศิลป์ ดีไซน์" />
+st.markdown("""<div class="t-header">
+
 <div><div class="t-title">ธนศิลป์ <span>AI Design</span></div>
 <div class="t-sub">ระบบสร้างคำสั่งออกแบบป้ายสำหรับ ChatGPT และ Gemini</div>
 <div class="t-tag">ใช้งานฟรี · ไม่ต้องใช้ API Key</div></div></div>""",unsafe_allow_html=True)
