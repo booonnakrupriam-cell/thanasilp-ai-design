@@ -8,10 +8,10 @@ st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠
 
 st.markdown("""
 <style>
-.block-container{max-width:1150px;padding-top:1.3rem;padding-bottom:2.5rem}
+.block-container{max-width:1480px;padding-top:1.2rem;padding-bottom:2.5rem}
 .t-header{
   position:relative;overflow:hidden;isolation:isolate;
-  padding:20px 27px;border-radius:20px;margin:0 0 18px;
+  padding:24px 34px;border-radius:20px;margin:0 0 18px;
   background:linear-gradient(118deg,#0c244e 0%,#154984 45%,#2768a4 72%,#ef7526 130%);
   box-shadow:0 14px 32px rgba(17,51,95,.23);
   border:1px solid rgba(255,255,255,.18);
@@ -28,14 +28,14 @@ st.markdown("""
   background:radial-gradient(ellipse,rgba(141,209,255,.22),transparent 72%);
   z-index:-1;
 }
-.t-title{font-size:clamp(25px,3vw,39px);font-weight:900;line-height:1.17;margin:0 0 10px;color:white;letter-spacing:-.6px;text-shadow:0 3px 13px rgba(5,21,46,.27)}
+.t-title{font-size:clamp(32px,3.3vw,48px);font-weight:900;line-height:1.17;margin:0 0 10px;color:white;letter-spacing:-.6px;text-shadow:0 3px 13px rgba(5,21,46,.27)}
 .t-title .brand{color:#fff}
 .t-title .ai{color:#ffce69;text-shadow:0 2px 16px rgba(250,147,30,.4)}
-.t-sub{font-size:clamp(13px,1.35vw,17px);font-weight:550;color:#f5f8ff;line-height:1.6;margin-top:6px;max-width:710px}
+.t-sub{font-size:clamp(17px,1.7vw,25px);font-weight:650;color:#f5f8ff;line-height:1.55;margin:9px 0 13px;max-width:none;text-wrap:pretty}
 .t-accent{color:#ffdf89;font-weight:800}
-.t-shop-offer{font-size:clamp(16px,1.7vw,22px);font-weight:850;color:#fff;margin:8px 0 3px;text-shadow:0 2px 9px #0003}
+.t-shop-offer{font-size:clamp(20px,1.9vw,28px);font-weight:850;color:#fff;margin:8px 0 3px;text-shadow:0 2px 9px #0003}
 .t-shop-offer strong{color:#ffdc91}
-.t-shop-contact{font-size:clamp(14px,1.35vw,18px);font-weight:750;color:#f2f7ff;margin-bottom:10px}
+.t-shop-contact{font-size:clamp(18px,1.55vw,22px);font-weight:750;color:#f2f7ff;margin-bottom:10px}
 .t-shop-contact a{color:#ffe3a5;text-decoration:none}
 .t-shop-buttons{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
 .t-contact-call,.t-contact-line{display:inline-block;padding:10px 17px;border-radius:12px;font-weight:800;text-decoration:none!important;color:white!important}
@@ -48,8 +48,11 @@ st.markdown("""
 div.stLinkButton a{border-radius:12px;font-weight:750}
 h2,h3{color:#173a68}
 @media(max-width:700px){
-.t-header{padding:17px 16px;border-radius:16px}
-.t-title{font-size:clamp(24px,6vw,33px)}
+.t-header{padding:19px 18px;border-radius:16px}
+.t-title{font-size:clamp(29px,7vw,38px)}
+.t-sub{font-size:clamp(16px,4.4vw,20px)}
+.t-shop-offer{font-size:clamp(18px,4.5vw,23px)}
+.t-shop-contact{font-size:clamp(16px,4vw,20px)}
 .t-tags{gap:6px}.t-tag{font-size:11px;padding:6px 9px}
 }
 </style>
@@ -70,7 +73,7 @@ line_html = (
 st.markdown("""
 <section class="t-header">
   <div class="t-title"><span class="brand">ธนศิลป์</span> <span class="ai">AI Design</span></div>
-  <div class="t-sub">เครื่องมือสร้างคำสั่งออกแบบป้าย <span class="t-accent">สวย คมชัด อ่านง่าย</span><br>พร้อมนำไปสร้างภาพใน ChatGPT และ Gemini</div>
+  <div class="t-sub">เครื่องมือสร้างคำสั่งออกแบบป้าย <span class="t-accent">สวย คมชัด อ่านง่าย</span> พร้อมนำไปสร้างภาพใน ChatGPT และ Gemini</div>
   <div class="t-shop-offer">รับพิมพ์งานสิ่งพิมพ์ทุกชนิด <strong>จัดส่งทั่วไทย</strong></div>
   <div class="t-shop-contact">สอบถามราคา <a href="tel:0913675929">091-367-5929</a></div>
   <div class="t-shop-buttons">
