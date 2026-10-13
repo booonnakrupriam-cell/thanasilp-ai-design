@@ -49,6 +49,7 @@ st.markdown("""
 [data-testid="stVerticalBlockBorderWrapper"]{border-radius:16px}
 div.stLinkButton a{border-radius:11px;font-weight:750}
 h2,h3{color:#0e3a7a}
+.form-section-title{font-size:22px!important;line-height:1.35;font-weight:850;color:#0a3679;margin:2px 0 11px;letter-spacing:0}
 @media(max-width:700px){
  .t-header{padding:17px 10px;border-radius:15px}
  .t-title{font-size:clamp(31px,8.2vw,49px)}
@@ -90,6 +91,9 @@ st.markdown("""
 </section>
 """, unsafe_allow_html=True)
 
+def section_title(title):
+    st.markdown(f'<div class="form-section-title">{html.escape(title)}</div>', unsafe_allow_html=True)
+
 WORK = ['ออกแบบป้ายใหม่','แก้ไขภาพเดิม','ปรับคุณภาพ Ultra-Sharp','แปลงเป็นเวกเตอร์','ลบข้อความคงพื้นหลัง','เปลี่ยนสีและองค์ประกอบ','ปรับขนาดภาพ','สร้างพื้นหลังเปล่า','Depth Map / CNC']
 TYPES = ['ร้านค้า / อาหาร / บริการ','งานบุญ / กฐิน / วัด','ราชการ / โรงเรียน / โครงการ','งานศพ / อาลัย','เกษียณ / แสดงความยินดี','งานวิชาการ / ประชาสัมพันธ์','ป้ายชื่อหน่วยงาน','อื่น ๆ']
 STYLES = ['เรียบหรู มืออาชีพ','สุภาพ เป็นทางการ','โมเดิร์น ทันสมัย','ลายไทยประยุกต์','มินิมอล สะอาดตา','สีสันสดใส โดดเด่น','ตัวหนังสือสามมิติ','ตามภาพตัวอย่าง']
@@ -97,12 +101,14 @@ STYLES = ['เรียบหรู มืออาชีพ','สุภาพ �
 with st.container(border=True):
     col1, col2 = st.columns(2)
     with col1:
-        work = st.selectbox('1. ประเภทงาน',WORK)
+        section_title('1. ประเภทงาน')
+        work = st.selectbox('1. ประเภทงาน',WORK,label_visibility='collapsed')
     with col2:
-        kind = st.selectbox('2. ประเภทป้าย',TYPES)
+        section_title('2. ประเภทป้าย')
+        kind = st.selectbox('2. ประเภทป้าย',TYPES,label_visibility='collapsed')
 
 with st.container(border=True):
-    st.subheader('3. ขนาดและทิศทางป้าย')
+    section_title('3. ขนาดและทิศทางป้าย')
     direction = st.radio('ทิศทาง',['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส','ตามสัดส่วนต้นฉบับ'],horizontal=True)
     preset = st.selectbox('ขนาดสำเร็จรูป (ซม.)',['กำหนดเอง','200 × 100','300 × 150','400 × 200','120 × 240'])
     dims={'200 × 100':(200,100),'300 × 150':(300,150),'400 × 200':(400,200),'120 × 240':(120,240)}
@@ -123,13 +129,15 @@ with st.container(border=True):
         st.warning(f'ขนาดที่กรอกเป็น{actual} แต่เลือก {direction} โปรดแก้ให้ตรงกัน')
 
 with st.container(border=True):
-    style=st.selectbox('4. สไตล์',STYLES)
+    section_title('4. สไตล์')
+    style=st.selectbox('4. สไตล์',STYLES,label_visibility='collapsed')
     textless=st.checkbox('ไม่ใส่ข้อความ จะเพิ่มเอง')
-    wording=st.text_area('5. ข้อความบนป้าย',height=145,disabled=textless,placeholder='พิมพ์ข้อความทั้งหมดตรงตามที่ต้องการให้ปรากฏบนป้าย')
+    section_title('5. ข้อความบนป้าย')
+    wording=st.text_area('5. ข้อความบนป้าย',label_visibility='collapsed',height=145,disabled=textless,placeholder='พิมพ์ข้อความทั้งหมดตรงตามที่ต้องการให้ปรากฏบนป้าย')
     st.caption('ไม่ต้องอัปโหลดรูปหรือเลือกโทนสีในเว็บ แนบรูปภาพหลักและโลโก้ใน ChatGPT/Gemini ได้โดยตรง')
 
 with st.container(border=True):
-    st.subheader('6. รายละเอียดเพิ่มเติม')
+    section_title('6. รายละเอียดเพิ่มเติม')
     opts=st.multiselect('ตัวเลือกพิเศษ',['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','เน้นรูปภาพ','คงโครงสร้างเดิม','ตกแต่งเพิ่มเติมอัตโนมัติ','ไม่ใส่ตาไก่','เพิ่มพื้นที่ว่างสำหรับข้อความ','คงใบหน้าบุคคลตามต้นฉบับ','ลบโลโก้เดิม'],default=['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','ตกแต่งเพิ่มเติมอัตโนมัติ'])
     extra=st.text_area('รายละเอียดเพิ่มเติม (ถ้ามี)',height=85)
 
@@ -158,7 +166,7 @@ prompt='\n'.join([
     'เมื่อทำภาพป้ายเสร็จให้ตรวจเทียบข้อความทั้งหมดกับภาพอ้างอิงอีกครั้ง หากไม่สามารถรับประกันความตรงของตัวหนังสือในภาพที่สร้าง ให้ทำพื้นหลังและเว้นช่องข้อความสำหรับใส่ภายหลังแทนการปล่อยคำผิด'
 ])
 
-st.subheader('7. ส่งคำสั่งไปสร้างภาพ')
+section_title('7. ส่งคำสั่งไปสร้างภาพ')
 st.code(prompt,language=None)
 st.download_button('⬇️ ดาวน์โหลดคำสั่ง .txt',data=prompt.encode('utf-8-sig'),file_name='thanasilp_prompt.txt',mime='text/plain',use_container_width=True)
 col_gpt,col_gemini=st.columns(2)
