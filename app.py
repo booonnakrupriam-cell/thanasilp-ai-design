@@ -59,6 +59,25 @@ h2,h3{color:#0e3a7a}
  .t-shop-contact a{margin-left:3px;padding:2px 6px}
  .t-tags{gap:6px}.t-tag{font-size:11px;padding:6px 9px}
 }
+
+/* Reference-inspired feature cards and responsive form workspace */
+body,[data-testid="stAppViewContainer"]{background:linear-gradient(180deg,#e9f5ff 0,#f4f9ff 420px,#ffffff 100%)}
+.th-nav{background:linear-gradient(90deg,#001848,#0745a5);color:white;padding:12px 22px;border-radius:14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;border-bottom:2px solid #11d5ff;font-size:15px;font-weight:750}
+.th-nav strong{font-size:20px;color:#ffe075}.th-nav a{color:#fff5ce;text-decoration:none}
+.th-features{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:0 0 20px}
+.th-feature{background:linear-gradient(155deg,#fff,#eaf4ff);border:1px solid #d1e3f9;border-radius:17px;padding:16px 13px;display:flex;gap:12px;align-items:center;box-shadow:0 5px 14px #002b6d18}
+.th-feature-icon{font-size:28px;background:#0759e9;color:white;border-radius:12px;padding:9px 12px}
+.th-feature:nth-child(2) .th-feature-icon{background:#f43877}.th-feature:nth-child(3) .th-feature-icon{background:#0cac6d}.th-feature:nth-child(4) .th-feature-icon{background:#f27617}
+.th-feature b{font-size:15px;color:#042e77}.th-feature span{color:#607089;font-size:12px;line-height:1.5}
+.th-section-h{background:linear-gradient(100deg,#063b9c,#0060e0);border-radius:11px;padding:13px 17px;color:white;font-size:19px;font-weight:850;margin:4px 0 18px}
+.form-section-title{font-size:19px!important;border-left:5px solid #1766e9;padding-left:9px;line-height:1.4;margin:5px 0 10px}
+.th-preview{background:linear-gradient(120deg,#120902,#7b3c04 55%,#291303);min-height:280px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;box-shadow:inset 0 0 70px #e2aa3566;margin:11px 0 8px;overflow:hidden}
+.th-preview .coffee{font-size:68px;filter:drop-shadow(2px 5px 6px #0009)}
+.th-preview .coffee-title{color:#ffdf8f;font-size:clamp(34px,3.3vw,55px);font-weight:950;text-shadow:0 4px 2px #290d00}
+.th-preview .coffee-sub{font-size:20px;font-weight:750}.th-preview .price{font-size:25px;color:#ffdc62;font-weight:950}
+.th-foot{background:linear-gradient(105deg,#00246c,#0752b3,#00246c);border-radius:16px;color:white;display:flex;flex-wrap:wrap;justify-content:space-around;gap:14px;padding:19px;margin-top:27px;font-weight:750;text-align:center}
+@media(max-width:950px){.th-features{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:570px){.th-features{grid-template-columns:1fr}.th-nav{font-size:12px}.th-feature{padding:12px}}
 </style>
 """,unsafe_allow_html=True)
 
@@ -74,6 +93,10 @@ line_html = (
     '" target="_blank" rel="noopener noreferrer">💬 รับออเดอร์ออกแบบ / พิมพ์ป้ายผ่าน LINE</a>'
     if line_ok else ""
 )
+st.markdown("""
+<div class="th-nav"><strong>✦ ธนศิลป์ AI Design</strong><span>หน้าแรก　 ·　 สร้างคำสั่ง AI　 ·　 บริการงานพิมพ์</span><a href="tel:0913675929">☎ 091-367-5929</a></div>
+""", unsafe_allow_html=True)
+
 st.markdown("""
 <section class="t-header">
   <div class="t-title"><span class="brand">ธนศิลป์</span> <span class="ai">AI</span> <span class="design">Design</span></div>
@@ -91,6 +114,15 @@ st.markdown("""
 </section>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<div class="th-features">
+<div class="th-feature"><div class="th-feature-icon">✦</div><div><b>สร้างคำสั่ง AI ได้ทันที</b><br><span>ใช้กับ ChatGPT และ Gemini</span></div></div>
+<div class="th-feature"><div class="th-feature-icon">▣</div><div><b>สวย คมชัด อ่านง่าย</b><br><span>คำสั่งออกแบบหลายประเภท</span></div></div>
+<div class="th-feature"><div class="th-feature-icon">▤</div><div><b>บริการงานพิมพ์จริง</b><br><span>สอบถามงานพิมพ์กับร้านโดยตรง</span></div></div>
+<div class="th-feature"><div class="th-feature-icon">🚚</div><div><b>จัดส่งทั่วไทย</b><br><span>บริการจัดส่งงานสิ่งพิมพ์</span></div></div>
+</div>
+""", unsafe_allow_html=True)
+
 def section_title(title):
     st.markdown(f'<div class="form-section-title">{html.escape(title)}</div>', unsafe_allow_html=True)
 
@@ -98,48 +130,64 @@ WORK = ['ออกแบบป้ายใหม่','แก้ไขภาพ�
 TYPES = ['ร้านค้า / อาหาร / บริการ','งานบุญ / กฐิน / วัด','ราชการ / โรงเรียน / โครงการ','งานศพ / อาลัย','เกษียณ / แสดงความยินดี','งานวิชาการ / ประชาสัมพันธ์','ป้ายชื่อหน่วยงาน','อื่น ๆ']
 STYLES = ['เรียบหรู มืออาชีพ','สุภาพ เป็นทางการ','โมเดิร์น ทันสมัย','ลายไทยประยุกต์','มินิมอล สะอาดตา','สีสันสดใส โดดเด่น','ตัวหนังสือสามมิติ','ตามภาพตัวอย่าง']
 
-with st.container(border=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        section_title('1. ประเภทงาน')
-        work = st.selectbox('1. ประเภทงาน',WORK,label_visibility='collapsed')
-    with col2:
-        section_title('2. ประเภทป้าย')
-        kind = st.selectbox('2. ประเภทป้าย',TYPES,label_visibility='collapsed')
+st.markdown('<div class="th-section-h">✦ สร้างคำสั่งออกแบบป้ายด้วย AI</div>',unsafe_allow_html=True)
+st.caption('เลือกประเภทงาน ขนาดป้าย และรูปแบบ แล้วนำคำสั่งไปใช้ใน ChatGPT หรือ Gemini')
 
-with st.container(border=True):
-    section_title('3. ขนาดและทิศทางป้าย')
-    direction = st.radio('ทิศทาง',['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส','ตามสัดส่วนต้นฉบับ'],horizontal=True)
-    preset = st.selectbox('ขนาดสำเร็จรูป (ซม.)',['กำหนดเอง','200 × 100','300 × 150','400 × 200','120 × 240'])
-    dims={'200 × 100':(200,100),'300 × 150':(300,150),'400 × 200':(400,200),'120 × 240':(120,240)}
-    if preset != 'กำหนดเอง':
-        a,b=dims[preset]
-        if direction=='แนวตั้ง' and a>b: a,b=b,a
-        if direction=='แนวนอน' and a<b: a,b=b,a
-        if direction=='สี่เหลี่ยมจัตุรัส': a=b=max(a,b)
-        if st.session_state.get('_last_preset')!=(preset,direction):
-            st.session_state['width_cm']=float(a)
-            st.session_state['height_cm']=float(b)
-            st.session_state['_last_preset']=(preset,direction)
-    cw,ch=st.columns(2)
-    with cw: w=st.number_input('กว้าง (ซม.)', min_value=1.0, value=300.0, step=10.0, key='width_cm')
-    with ch: h=st.number_input('สูง (ซม.)', min_value=1.0, value=150.0, step=10.0, key='height_cm')
-    actual='แนวนอน' if w>h else 'แนวตั้ง' if h>w else 'สี่เหลี่ยมจัตุรัส'
-    if direction in ['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส'] and direction!=actual:
-        st.warning(f'ขนาดที่กรอกเป็น{actual} แต่เลือก {direction} โปรดแก้ให้ตรงกัน')
+left,right = st.columns([1.55,1],gap='large')
+with left:
+    with st.container(border=True):
+        first,second=st.columns(2)
+        with first:
+            section_title('1. ประเภทงาน')
+            work=st.selectbox('ประเภทงาน',WORK,label_visibility='collapsed')
+        with second:
+            section_title('2. ประเภทป้าย')
+            kind=st.selectbox('ประเภทป้าย',TYPES,label_visibility='collapsed')
 
-with st.container(border=True):
-    section_title('4. สไตล์')
-    style=st.selectbox('4. สไตล์',STYLES,label_visibility='collapsed')
-    textless=st.checkbox('ไม่ใส่ข้อความ จะเพิ่มเอง')
-    section_title('5. ข้อความบนป้าย')
-    wording=st.text_area('5. ข้อความบนป้าย',label_visibility='collapsed',height=145,disabled=textless,placeholder='พิมพ์ข้อความทั้งหมดตรงตามที่ต้องการให้ปรากฏบนป้าย')
-    st.caption('ไม่ต้องอัปโหลดรูปหรือเลือกโทนสีในเว็บ แนบรูปภาพหลักและโลโก้ใน ChatGPT/Gemini ได้โดยตรง')
+        cs1,cs2=st.columns([1.15,1])
+        with cs1:
+            section_title('3. ขนาดและทิศทางป้าย')
+            direction=st.radio('ทิศทาง',['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส','ตามสัดส่วนต้นฉบับ'],horizontal=False)
+            preset=st.selectbox('ขนาดสำเร็จรูป (ซม.)',['กำหนดเอง','200 × 100','300 × 150','400 × 200','120 × 240'])
+        with cs2:
+            section_title('4. สไตล์')
+            style=st.selectbox('สไตล์',STYLES,label_visibility='collapsed')
+            st.caption('เลือกสไตล์การออกแบบให้เหมาะกับงาน')
+            st.info('แนบรูปตัวอย่างใน ChatGPT หรือ Gemini ได้โดยตรง',icon='🎨')
+        dims={'200 × 100':(200,100),'300 × 150':(300,150),'400 × 200':(400,200),'120 × 240':(120,240)}
+        if preset != 'กำหนดเอง':
+            a,b=dims[preset]
+            if direction=='แนวตั้ง' and a>b: a,b=b,a
+            if direction=='แนวนอน' and a<b: a,b=b,a
+            if direction=='สี่เหลี่ยมจัตุรัส': a=b=max(a,b)
+            if st.session_state.get('_last_preset')!=(preset,direction):
+                st.session_state['width_cm']=float(a)
+                st.session_state['height_cm']=float(b)
+                st.session_state['_last_preset']=(preset,direction)
+        cw,ch=st.columns(2)
+        with cw: w=st.number_input('กว้าง (ซม.)',min_value=1.0,value=300.0,step=10.0,key='width_cm')
+        with ch: h=st.number_input('สูง (ซม.)',min_value=1.0,value=150.0,step=10.0,key='height_cm')
+        actual='แนวนอน' if w>h else 'แนวตั้ง' if h>w else 'สี่เหลี่ยมจัตุรัส'
+        if direction in ['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส'] and direction!=actual:
+            st.warning(f'ขนาดที่กรอกเป็น{actual} แต่เลือก {direction} โปรดแก้ให้ตรงกัน')
+        section_title('5. ข้อความบนป้าย')
+        textless=st.checkbox('ไม่ใส่ข้อความ จะเพิ่มเอง')
+        wording=st.text_area('ข้อความบนป้าย',label_visibility='collapsed',height=125,disabled=textless,placeholder='พิมพ์ข้อความที่ต้องการให้ปรากฏบนป้าย')
+        section_title('6. รายละเอียดเพิ่มเติม')
+        opts=st.multiselect('ตัวเลือกพิเศษ',['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','เน้นรูปภาพ','คงโครงสร้างเดิม','ตกแต่งเพิ่มเติมอัตโนมัติ','ไม่ใส่ตาไก่','เพิ่มพื้นที่ว่างสำหรับข้อความ','คงใบหน้าบุคคลตามต้นฉบับ','ลบโลโก้เดิม'],default=['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','ตกแต่งเพิ่มเติมอัตโนมัติ'])
+        extra=st.text_area('รายละเอียดเพิ่มเติม (ถ้ามี)',height=83)
 
-with st.container(border=True):
-    section_title('6. รายละเอียดเพิ่มเติม')
-    opts=st.multiselect('ตัวเลือกพิเศษ',['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','เน้นรูปภาพ','คงโครงสร้างเดิม','ตกแต่งเพิ่มเติมอัตโนมัติ','ไม่ใส่ตาไก่','เพิ่มพื้นที่ว่างสำหรับข้อความ','คงใบหน้าบุคคลตามต้นฉบับ','ลบโลโก้เดิม'],default=['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','ตกแต่งเพิ่มเติมอัตโนมัติ'])
-    extra=st.text_area('รายละเอียดเพิ่มเติม (ถ้ามี)',height=85)
+with right:
+    with st.container(border=True):
+        st.markdown('<div class="th-section-h">▧ ตัวอย่างภาพสไตล์งานป้าย</div>',unsafe_allow_html=True)
+        st.markdown("""<div class="th-preview">
+            <div class="coffee-title">กาแฟสด</div>
+            <div class="coffee-sub">หอม เข้ม เต็มรสชาติ</div>
+            <div class="coffee">🥤 ☕</div>
+            <div class="price">เริ่มต้น 45.-</div>
+            </div>""",unsafe_allow_html=True)
+        st.caption('ตัวอย่างตกแต่งหน้าเว็บเท่านั้น ไม่ใช่ภาพที่สร้างขึ้นอัตโนมัติ')
+        st.info('คำสั่งจะสร้างตามข้อมูลที่กรอกด้านซ้าย จากนั้นเปิด ChatGPT หรือ Gemini เพื่อสร้างภาพจริง')
 
 prompt='\n'.join([
     'เริ่มออกแบบป้ายตามรายละเอียดนี้',
@@ -195,3 +243,5 @@ with col_gemini:
 st.info('วิธีใช้: **ChatGPT** เปิดพร้อมคำสั่ง (หากระบบรองรับ) แล้วตรวจและกดส่ง • **Gemini** กดคัดลอก+เปิด → Ctrl+V → แนบรูป/โลโก้ → กดส่ง')
 st.caption('เว็บไซต์นี้สร้างคำสั่งเท่านั้น ไม่ส่งไฟล์เข้าห้องแชทอัตโนมัติ และไม่ใช้ OpenAI API')
 
+
+st.markdown("""<div class="th-foot"><span>✦ งานออกแบบระดับมืออาชีพ</span><span>✓ รองรับงานหลายประเภท</span><span>🚚 จัดส่งทั่วไทย</span><span>☎ 091-367-5929</span></div>""",unsafe_allow_html=True)
