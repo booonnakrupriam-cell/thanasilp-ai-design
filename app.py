@@ -1,78 +1,126 @@
+import html
+from pathlib import Path
+from urllib.parse import quote
+
 import streamlit as st
-from PIL import Image
-from io import BytesIO
-import json
+import streamlit.components.v1 as components
 
-st.set_page_config(page_title='ธนศิลป์ AI Design',page_icon='🎨',layout='wide')
-st.markdown('''<style>.block-container{max-width:1150px;padding-top:1.5rem}h1{color:#173a68}div.stButton>button[kind="primary"]{background:#16447c;border:0} </style>''',unsafe_allow_html=True)
-st.title('🎨 ธนศิลป์ AI Design')
-st.caption('ระบบออกแบบป้าย • เลือกตัวเลือก อัปโหลดรูป 3 ช่อง แล้วสร้างคำสั่งพร้อมใช้กับ ChatGPT — ไม่ต้องใช้ API Key')
+st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
-WORK=['ออกแบบป้ายใหม่','แก้ไขภาพเดิม','ปรับคุณภาพ Ultra-Sharp','แปลงเป็นเวกเตอร์','ลบข้อความคงพื้นหลัง','เปลี่ยนสีและองค์ประกอบ','ปรับขนาดภาพ','สร้างพื้นหลังเปล่า','Depth Map / CNC']
-TYPES=['ร้านค้า / อาหาร / บริการ','งานบุญ / กฐิน / วัด','ราชการ / โรงเรียน / โครงการ','งานศพ / อาลัย','เกษียณ / แสดงความยินดี','งานวิชาการ / ประชาสัมพันธ์','ป้ายชื่อหน่วยงาน','อื่น ๆ']
-STYLES=['เรียบหรู มืออาชีพ','สุภาพ เป็นทางการ','โมเดิร์น ทันสมัย','ลายไทยประยุกต์','มินิมอล สะอาดตา','สีสันสดใส โดดเด่น','ตัวหนังสือสามมิติ','ตามภาพตัวอย่าง']
-COLORS=['น้ำเงิน–ทอง','แดง–ทอง','เขียว–ขาว','ชมพู–ขาว','ม่วง–ทอง','ดำ–ทอง','ขาว–น้ำเงิน','ตามภาพตัวอย่าง','กำหนดเอง']
+st.markdown("""
+<style>
+.block-container{max-width:1150px;padding-top:1.4rem}
+.t-header{display:flex;align-items:center;gap:20px;padding:20px 24px;border-radius:22px;background:linear-gradient(112deg,#101d31,#243d70 75%,#844c47);box-shadow:0 12px 30px #101d3130;margin-bottom:22px}
+.t-logo{width:142px;height:142px;object-fit:contain;border:3px solid #fff;border-radius:18px;box-shadow:0 6px 18px #0006;background:#18253b;flex-shrink:0}
+.t-title{font-size:clamp(27px,4vw,48px);font-weight:900;color:#fff;line-height:1.2;margin:0}
+.t-title span{color:#ffad56}
+.t-sub{color:#eef2fa;font-size:14px;line-height:1.5;margin-top:6px}
+.t-tag{display:inline-block;padding:6px 12px;background:#f36c21;border-radius:16px;color:#fff;font-size:12px;font-weight:700;margin-top:10px}
+[data-testid="stVerticalBlockBorderWrapper"]{border-radius:16px}
+div.stLinkButton a{border-radius:10px;font-weight:700}
+@media(max-width:700px){.t-header{padding:12px;gap:12px}.t-logo{width:90px;height:90px}.t-sub{font-size:12px}}
+</style>
+""",unsafe_allow_html=True)
+import base64
+logo_path=Path(__file__).parent / "assets" / "logo.png"
+if logo_path.exists():
+    logo_src="data:image/png;base64," + base64.b64encode(logo_path.read_bytes()).decode('ascii')
+else:
+    logo_src=""
+st.markdown(f"""<div class="t-header">
+<img class="t-logo" src="{logo_src}" alt="โลโก้ร้านธนศิลป์ ดีไซน์" />
+<div><div class="t-title">ธนศิลป์ <span>AI Design</span></div>
+<div class="t-sub">ระบบสร้างคำสั่งออกแบบป้ายสำหรับ ChatGPT และ Gemini</div>
+<div class="t-tag">ใช้งานฟรี · ไม่ต้องใช้ API Key</div></div></div>""",unsafe_allow_html=True)
+
+WORK = ['ออกแบบป้ายใหม่','แก้ไขภาพเดิม','ปรับคุณภาพ Ultra-Sharp','แปลงเป็นเวกเตอร์','ลบข้อความคงพื้นหลัง','เปลี่ยนสีและองค์ประกอบ','ปรับขนาดภาพ','สร้างพื้นหลังเปล่า','Depth Map / CNC']
+TYPES = ['ร้านค้า / อาหาร / บริการ','งานบุญ / กฐิน / วัด','ราชการ / โรงเรียน / โครงการ','งานศพ / อาลัย','เกษียณ / แสดงความยินดี','งานวิชาการ / ประชาสัมพันธ์','ป้ายชื่อหน่วยงาน','อื่น ๆ']
+STYLES = ['เรียบหรู มืออาชีพ','สุภาพ เป็นทางการ','โมเดิร์น ทันสมัย','ลายไทยประยุกต์','มินิมอล สะอาดตา','สีสันสดใส โดดเด่น','ตัวหนังสือสามมิติ','ตามภาพตัวอย่าง']
+
 with st.container(border=True):
-    c1,c2=st.columns(2)
-    with c1: work=st.selectbox('1. ประเภทงาน',WORK)
-    with c2: kind=st.selectbox('2. ประเภทป้าย',TYPES)
+    col1, col2 = st.columns(2)
+    with col1:
+        work = st.selectbox('1. ประเภทงาน',WORK)
+    with col2:
+        kind = st.selectbox('2. ประเภทป้าย',TYPES)
 
 with st.container(border=True):
-    st.subheader('3. ทิศทางและขนาดป้าย')
-    direction=st.radio('ทิศทาง', ['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส','ตามสัดส่วนต้นฉบับ'],horizontal=True)
-    presets={'กำหนดเอง':None,'200 × 100':(200,100),'300 × 150':(300,150),'400 × 200':(400,200),'120 × 240':(120,240)}
-    preset=st.selectbox('ขนาดสำเร็จรูป (ซม.)',list(presets))
-    if preset!='กำหนดเอง':
-        a,b=presets[preset]
-        if direction=='แนวตั้ง' and a>b:a,b=b,a
-        if direction=='แนวนอน' and a<b:a,b=b,a
-        if direction=='สี่เหลี่ยมจัตุรัส':a=b=max(a,b)
-        if st.session_state.get('preset_last') != (preset,direction):
-            st.session_state['w']=float(a);st.session_state['h']=float(b)
-            st.session_state['preset_last']=(preset,direction)
-    c1,c2=st.columns(2)
-    with c1: w=st.number_input('กว้าง (ซม.)',min_value=1.0,value=300.0,step=10.0,key='w')
-    with c2: h=st.number_input('สูง (ซม.)',min_value=1.0,value=150.0,step=10.0,key='h')
+    st.subheader('3. ขนาดและทิศทางป้าย')
+    direction = st.radio('ทิศทาง',['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส','ตามสัดส่วนต้นฉบับ'],horizontal=True)
+    preset = st.selectbox('ขนาดสำเร็จรูป (ซม.)',['กำหนดเอง','200 × 100','300 × 150','400 × 200','120 × 240'])
+    dims={'200 × 100':(200,100),'300 × 150':(300,150),'400 × 200':(400,200),'120 × 240':(120,240)}
+    if preset != 'กำหนดเอง':
+        a,b=dims[preset]
+        if direction=='แนวตั้ง' and a>b: a,b=b,a
+        if direction=='แนวนอน' and a<b: a,b=b,a
+        if direction=='สี่เหลี่ยมจัตุรัส': a=b=max(a,b)
+        if st.session_state.get('_last_preset')!=(preset,direction):
+            st.session_state['width_cm']=float(a)
+            st.session_state['height_cm']=float(b)
+            st.session_state['_last_preset']=(preset,direction)
+    cw,ch=st.columns(2)
+    with cw: w=st.number_input('กว้าง (ซม.)', min_value=1.0, value=300.0, step=10.0, key='width_cm')
+    with ch: h=st.number_input('สูง (ซม.)', min_value=1.0, value=150.0, step=10.0, key='height_cm')
     actual='แนวนอน' if w>h else 'แนวตั้ง' if h>w else 'สี่เหลี่ยมจัตุรัส'
-    if direction in ('แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส') and direction!=actual:
-        st.warning(f'ขนาดที่กรอกเป็น{actual} แต่เลือก {direction} กรุณาปรับขนาดให้ตรงกัน')
+    if direction in ['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส'] and direction!=actual:
+        st.warning(f'ขนาดที่กรอกเป็น{actual} แต่เลือก {direction} โปรดแก้ให้ตรงกัน')
 
 with st.container(border=True):
-    c1,c2=st.columns(2)
-    with c1: style=st.selectbox('4. สไตล์',STYLES)
-    with c2: color=st.selectbox('5. โทนสี',COLORS)
-    custom_color=st.text_input('ระบุโทนสีเพิ่มเติม (ถ้ามี)') if color=='กำหนดเอง' else ''
+    style=st.selectbox('4. สไตล์',STYLES)
     textless=st.checkbox('ไม่ใส่ข้อความ จะเพิ่มเอง')
-    wording=st.text_area('6. ข้อความบนป้าย',height=125,disabled=textless,placeholder='พิมพ์ข้อความ ชื่อร้าน วันเวลา สถานที่ และรายละเอียดทั้งหมด')
-
-st.subheader('7. อัปโหลดรูปภาพแยก 3 ช่อง')
-st.caption('ไฟล์จะใช้งานในเว็บบนเครื่องของคุณเท่านั้นในรุ่นฟรีนี้ และยังไม่ได้ส่งรูปเข้า ChatGPT อัตโนมัติ')
-ca,cb,cc=st.columns(3)
-def upload(col,title,key):
-    with col:
-        with st.container(border=True):
-            st.markdown('**'+title+'**')
-            obj=st.file_uploader('เลือกรูป',type=['png','jpg','jpeg','webp'],key=key)
-            if obj:
-                st.image(obj,caption=obj.name,use_container_width=True)
-            return obj
-primary=upload(ca,'รูปภาพหลัก','primary')
-logo=upload(cb,'โลโก้','logo')
-reference=upload(cc,'ภาพตัวอย่างแนวทาง','reference')
-position=st.selectbox('ตำแหน่งรูปภาพ', ['ให้ AI จัดวางเอง','พื้นหลังเต็มป้าย','ด้านซ้าย','ด้านขวา','ตรงกลาง','ด้านบน'])
-logo_position=st.selectbox('ตำแหน่งโลโก้',['ให้ AI จัดวางเอง','ซ้ายบน','ขวาบน','กลางบน','ด้านล่าง'])
+    wording=st.text_area('5. ข้อความบนป้าย',height=145,disabled=textless,placeholder='พิมพ์ข้อความทั้งหมดตรงตามที่ต้องการให้ปรากฏบนป้าย')
+    st.caption('ไม่ต้องอัปโหลดรูปหรือเลือกโทนสีในเว็บ แนบรูปภาพหลักและโลโก้ใน ChatGPT/Gemini ได้โดยตรง')
 
 with st.container(border=True):
-    st.subheader('8. ตัวเลือกเพิ่มเติม')
-    opts=st.multiselect('เลือกได้หลายข้อ',['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','เน้นรูปภาพ','คงโครงสร้างเดิม','ตกแต่งเพิ่มเติมอัตโนมัติ','ไม่ใส่ตาไก่','เพิ่มพื้นที่ว่างสำหรับข้อความ','คงใบหน้าบุคคลตามต้นฉบับ','ลบโลโก้เดิม'],default=['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','ตกแต่งเพิ่มเติมอัตโนมัติ'])
-    extra=st.text_area('รายละเอียดเพิ่มเติม (ถ้ามี)',placeholder='เช่น ใช้รูปด้านหลังแบบจาง ๆ ใส่ลายตกแต่งเล็กน้อย')
+    st.subheader('6. รายละเอียดเพิ่มเติม')
+    opts=st.multiselect('ตัวเลือกพิเศษ',['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','เน้นรูปภาพ','คงโครงสร้างเดิม','ตกแต่งเพิ่มเติมอัตโนมัติ','ไม่ใส่ตาไก่','เพิ่มพื้นที่ว่างสำหรับข้อความ','คงใบหน้าบุคคลตามต้นฉบับ','ลบโลโก้เดิม'],default=['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','ตกแต่งเพิ่มเติมอัตโนมัติ'])
+    extra=st.text_area('รายละเอียดเพิ่มเติม (ถ้ามี)',height=85)
 
-attached=', '.join([label for label,f in [('รูปภาพหลัก',primary),('โลโก้',logo),('ภาพตัวอย่างแนวทาง',reference)] if f]) or 'ไม่มี'
-lines=[f'เริ่มออกแบบป้ายตามรายละเอียดนี้',f'ประเภทงาน: {work}',f'ประเภทป้าย: {kind}',f'ขนาด: {w:g} × {h:g} ซม. ({actual})',f'ทิศทางที่เลือก: {direction}',f'สไตล์: {style}',f'โทนสี: {custom_color if color=="กำหนดเอง" else color}',f'ข้อความบนป้าย: {"ไม่มีข้อความ จะเพิ่มเอง" if textless else (wording or "ยังไม่ได้ระบุ")}',f'ไฟล์แนบที่เตรียมไว้: {attached}',f'การจัดรูปภาพ: {position}',f'ตำแหน่งโลโก้: {logo_position}',f'ตัวเลือกเพิ่มเติม: {", ".join(opts) if opts else "ไม่มี"}',f'รายละเอียดเพิ่มเติม: {extra or "ไม่มี"}', 'คำสั่งออกแบบ: ใช้ตัวหนังสือไทยตัวใหญ่ เด่น อ่านง่าย สีตัดพื้น สระและวรรณยุกต์ไม่ทับกัน จัดองค์ประกอบสมดุล เหมาะกับงานพิมพ์ขนาดใหญ่ ไม่ยืดหรือบีบภาพผิดสัดส่วน', 'ถ้ามีรูปภาพหลัก โลโก้ หรือภาพตัวอย่างแนวทาง ให้ใช้ไฟล์ที่ฉันอัปโหลดในแชทตามบทบาทของแต่ละไฟล์ รักษารายละเอียดเดิมเท่าที่ทำได้', 'หากผู้ใช้ระบุว่ามีไฟล์แต่ยังไม่ได้แนบใน ChatGPT ให้ขอรูปก่อนสร้าง ไม่อ้างว่าไฟล์มีความละเอียด 16K จริงโดยไม่ตรวจสอบ']
-prompt='\n'.join(lines)
-st.subheader('9. คำสั่งพร้อมใช้')
+prompt='\n'.join([
+    'เริ่มออกแบบป้ายตามรายละเอียดนี้',
+    f'ประเภทงาน: {work}',
+    f'ประเภทป้าย: {kind}',
+    f'ขนาด: {w:g} × {h:g} ซม. ({actual})',
+    f'ทิศทางที่เลือก: {direction}',
+    f'สไตล์: {style}',
+    f'ข้อความบนป้าย: {"ไม่มีข้อความ จะเพิ่มเอง" if textless else (wording or "ยังไม่ได้ระบุ")}',
+    f'ตัวเลือกเพิ่มเติม: {", ".join(opts) if opts else "ไม่มี"}',
+    f'รายละเอียดเพิ่มเติม: {extra or "ไม่มี"}',
+    'เลือกโทนสีและจัดแต่งองค์ประกอบให้อัตโนมัติตามประเภทงาน ไม่ต้องถามให้ผู้ใช้เลือกสี',
+    'ให้นำรูปภาพหลักและโลโก้ที่ผู้ใช้แนบในแชทมาใช้ประกอบการออกแบบ จัดตำแหน่งให้สวยงาม หากไม่ได้แนบให้จัดแบบโดยไม่ใช้รูปเหล่านั้น',
+    'เน้นตัวหนังสือภาษาไทยขนาดใหญ่ อ่านง่าย สีตัดพื้น สระและวรรณยุกต์ไม่ทับกัน',
+    'รักษาสัดส่วนป้ายตามขนาดจริง ไม่ยืดหรือบีบรูปภาพหรือโลโก้',
+    'สำคัญที่สุด: ข้อความบนป้ายทุกตัวอักษรต้องตรงตามที่ระบุ ห้ามแก้คำ เพิ่มคำ ลบคำ สะกดใหม่ หรือเรียบเรียงใหม่',
+    'คงลำดับบรรทัด ชื่อบุคคล สถานที่ เบอร์โทร เลขไทย ตัวเลข วันที่ เดือน ปี พ.ศ. และเครื่องหมายวรรคตอน',
+    'ตรวจสระและวรรณยุกต์ หากแสดงภาษาไทยไม่ได้แม่นยำให้เว้นพื้นที่ใส่ข้อความเอง ห้ามสร้างข้อความผิด',
+    'ถ้าเลือกไม่ใส่ข้อความ ห้ามแทรกตัวอักษรบนภาพ'
+])
+
+st.subheader('7. ส่งคำสั่งไปสร้างภาพ')
 st.code(prompt,language=None)
 st.download_button('⬇️ ดาวน์โหลดคำสั่ง .txt',data=prompt.encode('utf-8-sig'),file_name='thanasilp_prompt.txt',mime='text/plain',use_container_width=True)
-st.link_button('🔗 เปิด ChatGPT เพื่อวางคำสั่งและแนบรูป', 'https://chatgpt.com/',use_container_width=True)
-st.info('วิธีใช้ฟรี: คัดลอกข้อความคำสั่งด้านบน → เปิด ChatGPT → วางคำสั่ง → กด + แนบไฟล์ภาพหลัก/โลโก้/ตัวอย่างที่เลือกไว้ แล้วส่งข้อความเพื่อสร้างภาพตามสิทธิ์บัญชี ChatGPT ของคุณ')
-st.caption('เวอร์ชันนี้ยังไม่เชื่อม API และไม่สามารถส่งไฟล์เข้า ChatGPT ให้เองโดยอัตโนมัติ การทำเช่นนั้นต้องพัฒนาการเชื่อมต่อเพิ่ม')
+col_gpt,col_gemini=st.columns(2)
+with col_gpt:
+    st.link_button('🚀 ส่งคำสั่งไป ChatGPT','https://chatgpt.com/?q='+quote(prompt,safe=''),use_container_width=True)
+with col_gemini:
+    safe_prompt=html.escape(prompt,quote=True)
+    components.html(f'''
+    <button id="gemini" style="width:100%;padding:11px;border-radius:9px;border:1px solid #e87b2d;background:#f47721;color:white;font-weight:bold;cursor:pointer">✨ คัดลอกคำสั่ง + เปิด Gemini</button>
+    <div id="status" role="status" style="font:12px Arial;margin-top:7px;color:#555"></div>
+    <textarea id="source" style="position:absolute;left:-9999px">{safe_prompt}</textarea>
+    <script>
+    document.getElementById('gemini').onclick=async()=>{{
+       const tab=window.open('https://gemini.google.com/app','_blank');
+       let copied=false;
+       const text=document.getElementById('source').value;
+       try{{await navigator.clipboard.writeText(text);copied=true}}catch(e){{}}
+       if(!copied){{try{{const el=document.getElementById('source');el.style.left='0px';el.select();copied=document.execCommand('copy');el.style.left='-9999px'}}catch(e){{}}}}
+       document.getElementById('status').innerText=copied?'✅ คัดลอกแล้ว เปิด Gemini แล้วกด Ctrl+V เพื่อวางข้อความ':'คัดลอกไม่สำเร็จ กรุณาคัดลอกจากช่องคำสั่งด้านบน';
+       if(!tab)document.getElementById('status').innerText+=' | หากไม่เปิดแท็บ ให้ใช้ลิงก์สำรองด้านล่าง';
+    }};
+    </script>
+    ''',height=80)
+    st.link_button('เปิด Gemini (ลิงก์สำรอง)','https://gemini.google.com/app',use_container_width=True)
+
+st.info('วิธีใช้: **ChatGPT** เปิดพร้อมคำสั่ง (หากระบบรองรับ) แล้วตรวจและกดส่ง • **Gemini** กดคัดลอก+เปิด → Ctrl+V → แนบรูป/โลโก้ → กดส่ง')
+st.caption('เว็บไซต์นี้สร้างคำสั่งเท่านั้น ไม่ส่งไฟล์เข้าห้องแชทอัตโนมัติ และไม่ใช้ OpenAI API')
