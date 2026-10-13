@@ -29,14 +29,16 @@ st.markdown("""
   z-index:-1;
 }
 .t-title{font-size:clamp(32px,3.3vw,48px);font-weight:900;line-height:1.17;margin:0 0 10px;color:white;letter-spacing:-.6px;text-shadow:0 3px 13px rgba(5,21,46,.27)}
-.t-title .brand{color:#fff}
-.t-title .ai{color:#ffce69;text-shadow:0 2px 16px rgba(250,147,30,.4)}
+.t-title .brand{color:#ffffff;text-shadow:0 2px 0 #102b50,0 5px 16px rgba(0,0,0,.28)}
+.t-title .ai{color:#ffcb59;text-shadow:0 2px 0 rgba(107,59,10,.45),0 4px 16px rgba(255,172,47,.44)}
 .t-sub{font-size:clamp(17px,1.7vw,25px);font-weight:650;color:#f5f8ff;line-height:1.55;margin:9px 0 13px;max-width:none;text-wrap:pretty}
-.t-accent{color:#ffdf89;font-weight:800}
+.t-accent{color:#ffd363;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.24)}
+.t-service-highlight{color:#fff1b2;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.24)}
+.t-ai-names{color:#aee9ff;font-weight:850;text-shadow:0 2px 7px rgba(2,22,50,.45)}
 .t-shop-offer{font-size:clamp(20px,1.9vw,28px);font-weight:850;color:#fff;margin:8px 0 3px;text-shadow:0 2px 9px #0003}
-.t-shop-offer strong{color:#ffdc91}
+.t-shop-offer strong{color:#ffb86c;font-weight:950;text-shadow:0 2px 8px rgba(0,0,0,.28)}
 .t-shop-contact{font-size:clamp(18px,1.55vw,22px);font-weight:750;color:#f2f7ff;margin-bottom:10px}
-.t-shop-contact a{color:#ffe3a5;text-decoration:none}
+.t-shop-contact a{color:#ffe071;text-decoration:none;font-weight:950;text-shadow:0 1px 9px rgba(0,0,0,.3)}
 .t-shop-buttons{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
 .t-contact-call,.t-contact-line{display:inline-block;padding:10px 17px;border-radius:12px;font-weight:800;text-decoration:none!important;color:white!important}
 .t-contact-call{background:#ed731d;border:1px solid #ffbc81}
@@ -73,8 +75,8 @@ line_html = (
 st.markdown("""
 <section class="t-header">
   <div class="t-title"><span class="brand">ธนศิลป์</span> <span class="ai">AI Design</span></div>
-  <div class="t-sub">เครื่องมือสร้างคำสั่งออกแบบป้าย <span class="t-accent">สวย คมชัด อ่านง่าย</span> พร้อมนำไปสร้างภาพใน ChatGPT และ Gemini</div>
-  <div class="t-shop-offer">รับพิมพ์งานสิ่งพิมพ์ทุกชนิด <strong>จัดส่งทั่วไทย</strong></div>
+  <div class="t-sub">เครื่องมือสร้างคำสั่งออกแบบป้าย <span class="t-accent">สวย คมชัด อ่านง่าย</span> พร้อมนำไปสร้างภาพใน <span class="t-ai-names">ChatGPT และ Gemini</span></div>
+  <div class="t-shop-offer"><span class="t-service-highlight">รับพิมพ์งานสิ่งพิมพ์ทุกชนิด</span> <strong>จัดส่งทั่วไทย</strong></div>
   <div class="t-shop-contact">สอบถามราคา <a href="tel:0913675929">091-367-5929</a></div>
   <div class="t-shop-buttons">
     <a class="t-contact-call" href="tel:0913675929">📞 โทรสอบถามราคา</a>
