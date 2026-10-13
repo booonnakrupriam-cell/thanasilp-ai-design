@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from io import BytesIO
 import json
+import html
 from urllib.parse import quote
 
 st.set_page_config(page_title='ธนศิลป์ AI Design',page_icon='🎨',layout='wide')
@@ -77,8 +78,54 @@ c_chatgpt, c_gemini = st.columns(2)
 with c_chatgpt:
     st.link_button('🚀 ส่งคำสั่งไป ChatGPT', 'https://chatgpt.com/?q=' + quote(prompt, safe=''), use_container_width=True)
 with c_gemini:
-    st.link_button('✨ เปิด Google Gemini', 'https://gemini.google.com/app', use_container_width=True)
-st.caption('Gemini: คัดลอกคำสั่งจากกล่องด้านบน แล้วนำไปวางใน Gemini (ลิงก์ทั่วไปไม่สามารถแนบคำสั่งยาวและรูปเข้าแชทให้โดยตรงได้)')
+    import streamlit.components.v1 as components
+    # HTML-escape both text and attributes to avoid injecting untrusted prompt text.
+    safe_prompt = html.escape(prompt, quote=True)
+    components.html(f"""
+    <div style="font-family:Arial,sans-serif">
+      <button id="send-gemini" type="button"
+        style="width:100%;min-height:40px;background:#fff;color:#202124;border:1px solid #bbb;border-radius:9px;font-weight:650;cursor:pointer">
+        ✨ คัดลอกคำสั่ง + เปิด Gemini
+      </button>
+      <div id="gemini-status" role="status" aria-live="polite" style="font-size:12px;margin-top:5px;color:#575b61"></div>
+      <textarea id="gemini-prompt" style="position:fixed;left:-9999px;top:0" aria-hidden="true">{safe_prompt}</textarea>
+    </div>
+    <script>
+    document.getElementById('send-gemini').addEventListener('click', async () => {{
+      const value=document.getElementById('gemini-prompt').value;
+      const status=document.getElementById('gemini-status');
+      // Open while still in the user click handler so popup blockers allow it.
+      const tab=window.open('https://gemini.google.com/app','_blank','noopener,noreferrer');
+      let copied=false;
+      try {{
+        if (navigator.clipboard && window.isSecureContext) {{
+          await navigator.clipboard.writeText(value);
+          copied=true;
+        }}
+      }} catch (err) {{}}
+      if (!copied) {{
+        try {{
+          const el=document.getElementById('gemini-prompt');
+          el.style.position='absolute';el.style.left='0';el.style.top='0';
+          el.focus();el.select();
+          copied=document.execCommand('copy');
+          el.style.position='fixed';el.style.left='-9999px';
+        }} catch(err) {{}}
+      }}
+      if (copied) {{
+        status.textContent='✅ คัดลอกแล้ว! ไปที่ Gemini กด Ctrl+V แล้วส่ง';
+      }} else {{
+        status.textContent='⚠️ คัดลอกอัตโนมัติไม่สำเร็จ กรุณาคัดลอกจากกล่องคำสั่งด้านบน';
+      }}
+      if (!tab) {{
+        status.textContent += ' | หาก Gemini ไม่เปิด ให้คลิกลิงก์สำรองด้านล่าง';
+      }}
+    }});
+    </script>
+    """, height=86)
+    st.link_button('เปิด Gemini (ลิงก์สำรอง)', 'https://gemini.google.com/app', use_container_width=True)
+st.markdown('**วิธีใช้ Gemini:** ① กดปุ่ม **คัดลอกคำสั่ง + เปิด Gemini** ② ไปหน้าต่าง Gemini ③ กด **Ctrl + V** (มือถือ: แตะค้างแล้ววาง) ④ แนบรูปและโลโก้ใน Gemini ถ้ามี ⑤ ตรวจข้อความแล้วกดส่ง')
+st.caption('เบราว์เซอร์บางตัวอาจบล็อกการคัดลอกหรือเปิดแท็บใหม่ หากไม่สำเร็จให้คัดลอกข้อความในกรอบคำสั่งด้านบน แล้วใช้ลิงก์สำรอง')
 st.caption('เมื่อ ChatGPT เปิดขึ้นมา ให้ตรวจข้อความแล้วกดส่งอีกครั้ง หากไม่มีข้อความปรากฏ ให้คัดลอกคำสั่งจากด้านบนไปวางเอง')
 st.info('ใช้ฟรี: เลือกเปิด ChatGPT หรือ Gemini; สำหรับ Gemini ให้คัดลอกคำสั่งไปวางเอง จากนั้นแนบรูปภาพและโลโก้ในแชท AI ก่อนกดส่ง')
 st.caption('เวอร์ชันนี้ยังไม่เชื่อม API และไม่สามารถส่งไฟล์เข้า ChatGPT ให้เองโดยอัตโนมัติ การทำเช่นนั้นต้องพัฒนาการเชื่อมต่อเพิ่ม')
