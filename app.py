@@ -8,54 +8,55 @@ st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠
 
 st.markdown("""
 <style>
-.block-container{max-width:1480px;padding-top:1.2rem;padding-bottom:2.5rem}
+.block-container{max-width:1480px;padding-top:1.05rem;padding-bottom:2.4rem}
 .t-header{
-  position:relative;overflow:hidden;isolation:isolate;
-  padding:24px 34px;border-radius:20px;margin:0 0 18px;
-  background:linear-gradient(118deg,#0c244e 0%,#154984 45%,#2768a4 72%,#ef7526 130%);
-  box-shadow:0 14px 32px rgba(17,51,95,.23);
-  border:1px solid rgba(255,255,255,.18);
+ position:relative;isolation:isolate;overflow:hidden;text-align:center;
+ background:
+ radial-gradient(ellipse at 48% 0%,rgba(0,155,255,.65),transparent 38%),
+ radial-gradient(circle at 91% 60%,rgba(0,159,255,.45),transparent 32%),
+ linear-gradient(135deg,#00143c 0%,#004cc7 38%,#033fbd 62%,#001038 100%);
+ border:2px solid #2379e8;border-radius:22px;padding:23px 30px 22px;margin:0 0 23px;
+ box-shadow:inset 0 0 46px #006bff8c,0 14px 28px #001a4c3a;
 }
 .t-header:before{
-  content:"";position:absolute;right:-70px;top:-110px;
-  width:360px;height:360px;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,178,74,.49),rgba(255,178,74,0) 70%);
-  z-index:-1;
+ content:"";position:absolute;inset:-25% -12%;pointer-events:none;z-index:-1;
+ background:repeating-linear-gradient(135deg,transparent 0,transparent 130px,#00c6ff24 131px,#009dff11 148px,transparent 161px);
+ transform:skewY(-5deg);
 }
 .t-header:after{
-  content:"";position:absolute;left:28%;bottom:-135px;
-  width:430px;height:250px;border-radius:50%;transform:rotate(-17deg);
-  background:radial-gradient(ellipse,rgba(141,209,255,.22),transparent 72%);
-  z-index:-1;
+ content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+ background:radial-gradient(circle at 8% 17%,#00bbff44,transparent 21%),radial-gradient(circle at 98% 85%,#00baff55,transparent 25%);
 }
-.t-title{font-size:clamp(32px,3.3vw,48px);font-weight:900;line-height:1.17;margin:0 0 10px;color:white;letter-spacing:-.6px;text-shadow:0 3px 13px rgba(5,21,46,.27)}
-.t-title .brand{color:#ffffff;text-shadow:0 2px 0 #102b50,0 5px 16px rgba(0,0,0,.28)}
-.t-title .ai{color:#ffcb59;text-shadow:0 2px 0 rgba(107,59,10,.45),0 4px 16px rgba(255,172,47,.44)}
-.t-sub{font-size:clamp(17px,1.7vw,25px);font-weight:650;color:#f5f8ff;line-height:1.55;margin:9px 0 13px;max-width:none;text-wrap:pretty}
-.t-accent{color:#ffd363;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.24)}
-.t-service-highlight{color:#fff1b2;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.24)}
-.t-ai-names{color:#aee9ff;font-weight:850;text-shadow:0 2px 7px rgba(2,22,50,.45)}
-.t-shop-offer{font-size:clamp(20px,1.9vw,28px);font-weight:850;color:#fff;margin:8px 0 3px;text-shadow:0 2px 9px #0003}
-.t-shop-offer strong{color:#ffb86c;font-weight:950;text-shadow:0 2px 8px rgba(0,0,0,.28)}
-.t-shop-contact{font-size:clamp(18px,1.55vw,22px);font-weight:750;color:#f2f7ff;margin-bottom:10px}
-.t-shop-contact a{color:#ffe071;text-decoration:none;font-weight:950;text-shadow:0 1px 9px rgba(0,0,0,.3)}
-.t-shop-buttons{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+.t-title{font-size:clamp(37px,6.3vw,88px);font-weight:1000;line-height:1.21;margin:0 0 14px;letter-spacing:-1.3px;filter:drop-shadow(0 5px 2px #00102e)}
+.t-title .brand,.t-title .design{color:#f8fcff;-webkit-text-stroke:1px #91c8ff;text-shadow:1px 3px 0 #1258bc,3px 6px 0 #001e68,0 0 19px #36b6ff}
+.t-title .ai{color:#ffcf35;-webkit-text-stroke:1px #fff2a9;text-shadow:1px 3px 0 #e89000,3px 6px 0 #704000,0 0 24px #ffdd40}
+.t-title .design{font-style:italic}
+.t-sub{font-size:clamp(17px,2.15vw,30px);font-weight:850;color:#fff;line-height:1.42;margin:10px auto 14px;padding:13px 18px;max-width:1120px;border-radius:65px;background:linear-gradient(95deg,#001849de,#031451d9);border:2px solid #00c5ff;box-shadow:0 0 17px #00c8ffb0,inset 0 0 22px #004fce}
+.t-accent{color:#ffcf32;font-weight:1000;text-shadow:0 1px 7px #b26b00}
+.t-ai-names{color:#14e4ff;font-weight:950;text-shadow:0 0 8px #009ad1}
+.t-shop-offer{max-width:1110px;margin:20px auto 14px;padding:13px 20px;border-radius:20px;line-height:1.3;background:linear-gradient(180deg,#fff5ad,#ffcf23 50%,#fba911);border:3px solid #ffe977;box-shadow:inset 0 0 9px #ffffffbb,0 5px 0 #a66400,0 8px 21px #020e2b8c;color:#052c80;font-size:clamp(20px,3vw,42px);font-weight:1000;text-shadow:1px 1px 0 #fff7bd}
+.t-service-highlight{color:#05286c;font-weight:1000}
+.t-shop-offer strong{color:#d20f14;font-weight:1000;text-shadow:1px 1px #fff}
+.t-shop-contact{display:table;max-width:100%;margin:12px auto 14px;padding:9px 20px;color:white;background:#002057;border-radius:50px;border:2px solid #23d5ff;box-shadow:0 0 15px #00ccff99;font-size:clamp(19px,2.3vw,31px);font-weight:850}
+.t-shop-contact a{display:inline-block;margin-left:8px;padding:1px 16px;border-radius:28px;background:linear-gradient(#fff59e,#ffc02c);color:#002969!important;text-decoration:none;font-weight:1000;font-size:1.12em;box-shadow:inset 0 0 9px #fff,0 3px 0 #b17100}
+.t-shop-buttons{display:flex;justify-content:center;gap:11px;flex-wrap:wrap;margin:14px 0 8px}
 .t-contact-call,.t-contact-line{display:inline-block;padding:10px 17px;border-radius:12px;font-weight:800;text-decoration:none!important;color:white!important}
-.t-contact-call{background:#ed731d;border:1px solid #ffbc81}
-.t-contact-line{background:#08a74f;border:1px solid #74da96}
-.t-tags{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}
-.t-tag{padding:7px 13px;border-radius:999px;font-size:12px;font-weight:800;color:#fff;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.26)}
-.t-tag.orange{background:linear-gradient(120deg,#f66e20,#ffa43b);border-color:transparent}
-[data-testid="stVerticalBlockBorderWrapper"]{border-radius:17px}
-div.stLinkButton a{border-radius:12px;font-weight:750}
-h2,h3{color:#173a68}
+.t-contact-call{background:linear-gradient(120deg,#e96d12,#ff9d26);border:1px solid #ffd58a}
+.t-contact-line{background:#07a74e;border:1px solid #74da96}
+.t-tags{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin-top:12px}
+.t-tag{padding:6px 13px;border-radius:999px;font-size:12px;font-weight:800;color:#fff;background:#052e74bb;border:1px solid #5ba9f8}
+.t-tag.orange{background:linear-gradient(120deg,#f66e20,#ffa43b);border-color:#ffe39b}
+[data-testid="stVerticalBlockBorderWrapper"]{border-radius:16px}
+div.stLinkButton a{border-radius:11px;font-weight:750}
+h2,h3{color:#0e3a7a}
 @media(max-width:700px){
-.t-header{padding:19px 18px;border-radius:16px}
-.t-title{font-size:clamp(29px,7vw,38px)}
-.t-sub{font-size:clamp(16px,4.4vw,20px)}
-.t-shop-offer{font-size:clamp(18px,4.5vw,23px)}
-.t-shop-contact{font-size:clamp(16px,4vw,20px)}
-.t-tags{gap:6px}.t-tag{font-size:11px;padding:6px 9px}
+ .t-header{padding:17px 10px;border-radius:15px}
+ .t-title{font-size:clamp(31px,8.2vw,49px)}
+ .t-sub{font-size:clamp(14px,4.1vw,19px);border-radius:19px;padding:12px 10px}
+ .t-shop-offer{font-size:clamp(18px,5vw,25px);padding:11px 8px;border-radius:13px}
+ .t-shop-contact{font-size:clamp(15px,4.3vw,22px);padding:8px}
+ .t-shop-contact a{margin-left:3px;padding:2px 6px}
+ .t-tags{gap:6px}.t-tag{font-size:11px;padding:6px 9px}
 }
 </style>
 """,unsafe_allow_html=True)
@@ -74,7 +75,7 @@ line_html = (
 )
 st.markdown("""
 <section class="t-header">
-  <div class="t-title"><span class="brand">ธนศิลป์</span> <span class="ai">AI Design</span></div>
+  <div class="t-title"><span class="brand">ธนศิลป์</span> <span class="ai">AI</span> <span class="design">Design</span></div>
   <div class="t-sub">เครื่องมือสร้างคำสั่งออกแบบป้าย <span class="t-accent">สวย คมชัด อ่านง่าย</span> พร้อมนำไปสร้างภาพใน <span class="t-ai-names">ChatGPT และ Gemini</span></div>
   <div class="t-shop-offer"><span class="t-service-highlight">รับพิมพ์งานสิ่งพิมพ์ทุกชนิด</span> <strong>จัดส่งทั่วไทย</strong></div>
   <div class="t-shop-contact">สอบถามราคา <a href="tel:0913675929">091-367-5929</a></div>
