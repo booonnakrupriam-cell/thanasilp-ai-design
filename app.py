@@ -76,8 +76,6 @@ st.markdown("""
     <a class="t-contact-call" href="tel:0913675929">📞 โทรสอบถามราคา</a>
     """ + line_html + """
   </div>
-  <div class="t-sub">เครื่องมือสร้างคำสั่งออกแบบป้าย <span class="t-accent">สวย คมชัด อ่านง่าย</span><br>
-  พร้อมนำไปสร้างภาพใน ChatGPT และ Gemini</div>
   <div class="t-tags">
     <span class="t-tag orange">✦ ใช้งานฟรี</span>
     <span class="t-tag">ไม่ต้องใช้ API Key</span>
