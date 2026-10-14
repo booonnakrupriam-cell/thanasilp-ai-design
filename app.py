@@ -1,4 +1,5 @@
 import html
+from urllib.parse import quote
 
 import streamlit as st
 import streamlit.components.v1 as components
