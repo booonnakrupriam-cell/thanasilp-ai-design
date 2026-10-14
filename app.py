@@ -1,5 +1,4 @@
 import html
-from urllib.parse import quote
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -216,7 +215,24 @@ st.code(prompt,language=None)
 st.download_button('⬇️ ดาวน์โหลดคำสั่ง .txt',data=prompt.encode('utf-8-sig'),file_name='thanasilp_prompt.txt',mime='text/plain',use_container_width=True)
 col_gpt,col_gemini=st.columns(2)
 with col_gpt:
-    st.link_button('🚀 ส่งคำสั่งไป ChatGPT','https://chatgpt.com/?q='+quote(prompt,safe=''),use_container_width=True)
+    safe_gpt=html.escape(prompt,quote=True)
+    components.html(f'''
+    <button id="gpt" style="width:100%;padding:11px;border-radius:9px;border:1px solid #1161c5;background:#1165e8;color:white;font-weight:bold;cursor:pointer">🚀 คัดลอกคำสั่ง + เปิด ChatGPT</button>
+    <div id="status" role="status" style="font:12px Arial;margin-top:7px;color:#555"></div>
+    <textarea id="source" style="position:absolute;left:-9999px">{safe_gpt}</textarea>
+    <script>
+    document.getElementById('gpt').onclick=async()=>{{
+       const tab=window.open('https://chatgpt.com/','_blank');
+       let copied=false;
+       const text=document.getElementById('source').value;
+       try{{await navigator.clipboard.writeText(text);copied=true}}catch(e){{}}
+       if(!copied){{try{{const el=document.getElementById('source');el.style.left='0px';el.select();copied=document.execCommand('copy');el.style.left='-9999px'}}catch(e){{}}}}
+       document.getElementById('status').innerText=copied?'✅ คัดลอกแล้ว เปิด ChatGPT แล้วกด Ctrl+V เพื่อวางข้อความ':'คัดลอกไม่สำเร็จ กรุณาคัดลอกจากช่องคำสั่งด้านบน';
+       if(!tab)document.getElementById('status').innerText+=' | หากไม่เปิดแท็บ ให้ใช้ลิงก์สำรองด้านล่าง';
+    }};
+    </script>
+    ''',height=80)
+    st.link_button('เปิด ChatGPT (ลิงก์สำรอง)','https://chatgpt.com/',use_container_width=True)
 with col_gemini:
     safe_prompt=html.escape(prompt,quote=True)
     components.html(f'''
@@ -237,7 +253,7 @@ with col_gemini:
     ''',height=80)
     st.link_button('เปิด Gemini (ลิงก์สำรอง)','https://gemini.google.com/app',use_container_width=True)
 
-st.info('วิธีใช้: **ChatGPT** เปิดพร้อมคำสั่ง (หากระบบรองรับ) แล้วตรวจและกดส่ง • **Gemini** กดคัดลอก+เปิด → Ctrl+V → แนบรูป/โลโก้ → กดส่ง')
+st.info('วิธีใช้: **ChatGPT และ Gemini** กดคัดลอก+เปิด → ในหน้าแชทกด Ctrl+V เพื่อวางคำสั่ง → แนบรูปที่ต้องการ → กดส่ง (ไม่ส่งคำสั่งยาวผ่าน URL อีกต่อไป)')
 st.caption('เว็บไซต์นี้สร้างคำสั่งเท่านั้น ไม่ส่งไฟล์เข้าห้องแชทอัตโนมัติ และไม่ใช้ OpenAI API')
 
 
