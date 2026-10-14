@@ -225,8 +225,24 @@ with col_gpt:
     if len(gpt_url)<7500:
         st.link_button('🚀 ส่งคำสั่งไป ChatGPT',gpt_url,use_container_width=True)
     else:
-        st.warning('ข้อความที่กรอกยาวเกินสำหรับลิงก์โดยตรง โปรดคัดลอกคำสั่งและเปิด ChatGPT แทน')
-        st.link_button('เปิด ChatGPT','https://chatgpt.com/',use_container_width=True)
+        safe_gpt=html.escape(prompt,quote=True)
+        components.html(f'''
+        <button id="gpt" style="width:100%;padding:12px;border-radius:9px;border:1px solid #105bd8;background:#1263e8;color:#fff;font-weight:800;cursor:pointer">🚀 ส่งคำสั่งไป ChatGPT</button>
+        <div id="gpt_status" style="font:12px Arial;margin-top:6px"></div>
+        <textarea id="gpt_text" style="position:absolute;left:-9999px">{safe_gpt}</textarea>
+        <script>
+        document.getElementById('gpt').onclick=async()=>{{
+          const tab=window.open('https://chatgpt.com/','_blank');
+          const el=document.getElementById('gpt_text');
+          let copied=false;
+          try{{await navigator.clipboard.writeText(el.value);copied=true}}catch(e){{}}
+          if(!copied){{try{{el.style.left='0px';el.select();copied=document.execCommand('copy');el.style.left='-9999px'}}catch(e){{}}}}
+          document.getElementById('gpt_status').innerText=copied?'คัดลอกคำสั่งแล้ว กรุณากด Ctrl+V ใน ChatGPT แล้วกดส่ง':'เปิด ChatGPT แล้ว กรุณาคัดลอกคำสั่งจากกรอบด้านบน';
+          if(!tab)document.getElementById('gpt_status').innerText+=' (หากไม่เปิดแท็บ กรุณาเปิด ChatGPT ด้วยตัวเอง)';
+        }};
+        </script>
+        ''',height=77)
+        st.link_button('เปิด ChatGPT (สำรอง)','https://chatgpt.com/',use_container_width=True)
 with col_gemini:
     safe_prompt=html.escape(prompt,quote=True)
     components.html(f'''
