@@ -216,33 +216,19 @@ prompt='\n'.join([
     'เน้นภาพ Ultra-Sharp คุณภาพสูงสุดที่ระบบรองรับ และหากเลือกไม่ใส่ข้อความ ห้ามสร้างตัวอักษร'
 ])
 section_title('7. ส่งคำสั่งไปสร้างภาพ')
-st.code(prompt,language=None)
+st.caption('คำสั่งของคุณอยู่ในช่องด้านล่าง สามารถคลิกแล้วกด Ctrl+A และ Ctrl+C เพื่อคัดลอกได้ทันที')
+st.text_area('คำสั่งพร้อมใช้ (คัดลอกได้)',value=prompt,height=260,key='prompt_display')
 st.download_button('⬇️ ดาวน์โหลดคำสั่ง .txt',data=prompt.encode('utf-8-sig'),file_name='thanasilp_prompt.txt',mime='text/plain',use_container_width=True)
 col_gpt,col_gemini=st.columns(2)
 with col_gpt:
-    # Limit direct-link length to avoid oversized HTTP requests.
     gpt_url='https://chatgpt.com/?q='+quote(prompt,safe='')
-    if len(gpt_url)<7500:
+    if len(gpt_url)<=25000:
         st.link_button('🚀 ส่งคำสั่งไป ChatGPT',gpt_url,use_container_width=True)
+        st.caption('เปิด ChatGPT พร้อมใส่ข้อความในช่องแชท (ขึ้นอยู่กับการรองรับของ ChatGPT)')
     else:
-        safe_gpt=html.escape(prompt,quote=True)
-        components.html(f'''
-        <button id="gpt" style="width:100%;padding:12px;border-radius:9px;border:1px solid #105bd8;background:#1263e8;color:#fff;font-weight:800;cursor:pointer">🚀 ส่งคำสั่งไป ChatGPT</button>
-        <div id="gpt_status" style="font:12px Arial;margin-top:6px"></div>
-        <textarea id="gpt_text" style="position:absolute;left:-9999px">{safe_gpt}</textarea>
-        <script>
-        document.getElementById('gpt').onclick=async()=>{{
-          const tab=window.open('https://chatgpt.com/','_blank');
-          const el=document.getElementById('gpt_text');
-          let copied=false;
-          try{{await navigator.clipboard.writeText(el.value);copied=true}}catch(e){{}}
-          if(!copied){{try{{el.style.left='0px';el.select();copied=document.execCommand('copy');el.style.left='-9999px'}}catch(e){{}}}}
-          document.getElementById('gpt_status').innerText=copied?'คัดลอกคำสั่งแล้ว กรุณากด Ctrl+V ใน ChatGPT แล้วกดส่ง':'เปิด ChatGPT แล้ว กรุณาคัดลอกคำสั่งจากกรอบด้านบน';
-          if(!tab)document.getElementById('gpt_status').innerText+=' (หากไม่เปิดแท็บ กรุณาเปิด ChatGPT ด้วยตัวเอง)';
-        }};
-        </script>
-        ''',height=77)
-        st.link_button('เปิด ChatGPT (สำรอง)','https://chatgpt.com/',use_container_width=True)
+        st.warning('ข้อความยาวเกินกว่าจะส่งผ่านลิงก์อย่างปลอดภัย')
+        st.link_button('🚀 เปิด ChatGPT', 'https://chatgpt.com/', use_container_width=True)
+        st.caption('คัดลอกข้อความในช่องด้านบน (Ctrl+A → Ctrl+C) แล้ววางใน ChatGPT (Ctrl+V)')
 with col_gemini:
     safe_prompt=html.escape(prompt,quote=True)
     components.html(f'''
