@@ -229,37 +229,57 @@ prompt='\n'.join([
     'เน้นภาพ Ultra-Sharp คุณภาพสูงสุดที่ระบบรองรับ และหากเลือกไม่ใส่ข้อความ ห้ามสร้างตัวอักษร'
 ])
 section_title('7. ส่งคำสั่งไปสร้างภาพ')
-st.caption('บนมือถือ: กดคัดลอกคำสั่ง แล้วเปิด ChatGPT หรือ Gemini เพื่อวางข้อความได้ทันที')
-st.text_area('คำสั่งพร้อมใช้ (คัดลอกได้)',value=prompt,height=245,key='prompt_display')
-safe_copy=html.escape(prompt,quote=True)
+st.caption('คำสั่งของคุณอยู่ในช่องด้านล่าง สามารถคลิกแล้วกด Ctrl+A และ Ctrl+C เพื่อคัดลอกได้ทันที')
+st.text_area('คำสั่งพร้อมใช้ (คัดลอกได้)',value=prompt,height=260,key='prompt_display')
+
+# Additional mobile-friendly copy button; original buttons remain unchanged.
+safe_mobile_prompt=html.escape(prompt,quote=True)
 components.html(f'''
-<button id="copy" style="width:100%;padding:13px;border:0;border-radius:10px;background:#1166df;color:white;font-weight:800;font-size:16px;cursor:pointer">📋 คัดลอกคำสั่ง</button>
-<div id="copy_status" role="status" style="font:13px Arial;margin-top:7px;color:#234"></div>
-<textarea id="copy_src" style="position:absolute;left:-9999px">{safe_copy}</textarea>
+<button id="mobile_copy" style="width:100%;padding:11px;border-radius:9px;border:1px solid #1965cf;background:#176ce7;color:white;font-weight:800;font-size:15px;cursor:pointer">📋 คัดลอกคำสั่ง (มือถือ)</button>
+<div id="mobile_status" role="status" style="font:12px Arial;margin-top:6px;color:#234"></div>
+<textarea id="mobile_source" style="position:absolute;left:-9999px">{safe_mobile_prompt}</textarea>
 <script>
-document.getElementById('copy').onclick=async()=>{{
- const el=document.getElementById('copy_src');
- let ok=false;
- try{{await navigator.clipboard.writeText(el.value);ok=true}}catch(e){{}}
- if(!ok){{try{{el.style.left='0px';el.select();el.setSelectionRange(0,el.value.length);ok=document.execCommand('copy');el.style.left='-9999px'}}catch(e){{}}}}
- document.getElementById('copy_status').innerText=ok?'✅ คัดลอกแล้ว! เปิด ChatGPT หรือ Gemini แล้ววางข้อความได้เลย':'หากคัดลอกไม่สำเร็จ ให้เลือกข้อความจากช่องด้านบนแล้วคัดลอก';
+document.getElementById('mobile_copy').onclick=async()=>{{
+ const el=document.getElementById('mobile_source'); let copied=false;
+ try{{await navigator.clipboard.writeText(el.value);copied=true}}catch(e){{}}
+ if(!copied){{try{{el.style.left='0px';el.select();el.setSelectionRange(0,el.value.length);copied=document.execCommand('copy');el.style.left='-9999px'}}catch(e){{}}}}
+ document.getElementById('mobile_status').innerText=copied?'✅ คัดลอกแล้ว นำไปวางใน ChatGPT หรือ Gemini ได้เลย':'คัดลอกอัตโนมัติไม่สำเร็จ กรุณาคัดลอกข้อความจากช่องด้านบน';
 }};
 </script>
-''',height=83)
+''',height=78)
+
 st.download_button('⬇️ ดาวน์โหลดคำสั่ง .txt',data=prompt.encode('utf-8-sig'),file_name='thanasilp_prompt.txt',mime='text/plain',use_container_width=True)
 col_gpt,col_gemini=st.columns(2)
 with col_gpt:
     gpt_url='https://chatgpt.com/?q='+quote(prompt,safe='')
-    if len(gpt_url)<=7000:
+    if len(gpt_url)<=25000:
         st.link_button('🚀 ส่งคำสั่งไป ChatGPT',gpt_url,use_container_width=True)
+        st.caption('เปิด ChatGPT พร้อมใส่ข้อความในช่องแชท (ขึ้นอยู่กับการรองรับของ ChatGPT)')
     else:
-        st.link_button('🚀 เปิด ChatGPT','https://chatgpt.com/',use_container_width=True)
-        st.caption('คำสั่งยาว: กดคัดลอกด้านบนก่อน แล้ววางในแชท')
+        st.warning('ข้อความยาวเกินกว่าจะส่งผ่านลิงก์อย่างปลอดภัย')
+        st.link_button('🚀 เปิด ChatGPT', 'https://chatgpt.com/', use_container_width=True)
+        st.caption('คัดลอกข้อความในช่องด้านบน (Ctrl+A → Ctrl+C) แล้ววางใน ChatGPT (Ctrl+V)')
 with col_gemini:
-    st.link_button('✨ เปิด Gemini','https://gemini.google.com/app',use_container_width=True)
-    st.caption('กดคัดลอกคำสั่งด้านบน แล้ววางใน Gemini')
-st.info('วิธีใช้บนมือถือ: กด **📋 คัดลอกคำสั่ง** → เปิด ChatGPT หรือ Gemini → แตะค้างที่ช่องข้อความแล้วเลือก **วาง** → กดส่ง')
+    safe_prompt=html.escape(prompt,quote=True)
+    components.html(f'''
+    <button id="gemini" style="width:100%;padding:11px;border-radius:9px;border:1px solid #e87b2d;background:#f47721;color:white;font-weight:bold;cursor:pointer">✨ คัดลอกคำสั่ง + เปิด Gemini</button>
+    <div id="status" role="status" style="font:12px Arial;margin-top:7px;color:#555"></div>
+    <textarea id="source" style="position:absolute;left:-9999px">{safe_prompt}</textarea>
+    <script>
+    document.getElementById('gemini').onclick=async()=>{{
+       const tab=window.open('https://gemini.google.com/app','_blank');
+       let copied=false;
+       const text=document.getElementById('source').value;
+       try{{await navigator.clipboard.writeText(text);copied=true}}catch(e){{}}
+       if(!copied){{try{{const el=document.getElementById('source');el.style.left='0px';el.select();copied=document.execCommand('copy');el.style.left='-9999px'}}catch(e){{}}}}
+       document.getElementById('status').innerText=copied?'✅ คัดลอกแล้ว เปิด Gemini แล้วกด Ctrl+V เพื่อวางข้อความ':'คัดลอกไม่สำเร็จ กรุณาคัดลอกจากช่องคำสั่งด้านบน';
+       if(!tab)document.getElementById('status').innerText+=' | หากไม่เปิดแท็บ ให้ใช้ลิงก์สำรองด้านล่าง';
+    }};
+    </script>
+    ''',height=80)
+    st.link_button('เปิด Gemini (ลิงก์สำรอง)','https://gemini.google.com/app',use_container_width=True)
 
+st.info('วิธีใช้: **ChatGPT** กดส่งคำสั่งโดยตรง (ถ้าเบราว์เซอร์รองรับ) แล้วกดส่งในแชท • **Gemini** กดคัดลอก+เปิด → Ctrl+V → กดส่ง')
 st.caption('เว็บไซต์นี้สร้างคำสั่งเท่านั้น ไม่ส่งไฟล์เข้าห้องแชทอัตโนมัติ และไม่ใช้ OpenAI API')
 
 
