@@ -248,7 +248,6 @@ document.getElementById('mobile_copy').onclick=async()=>{{
 </script>
 ''',height=78)
 
-st.download_button('⬇️ ดาวน์โหลดคำสั่ง .txt',data=prompt.encode('utf-8-sig'),file_name='thanasilp_prompt.txt',mime='text/plain',use_container_width=True)
 col_gpt,col_gemini=st.columns(2)
 with col_gpt:
     gpt_url='https://chatgpt.com/?q='+quote(prompt,safe='')
