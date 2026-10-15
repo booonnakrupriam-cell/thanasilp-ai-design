@@ -296,7 +296,7 @@ prompt=sign_prompt if selected_prompt_type=='ออกแบบป้าย' els
 
 section_title('7. ส่งคำสั่งไปสร้างภาพ')
 st.caption('คำสั่งของคุณอยู่ในช่องด้านล่าง สามารถคลิกแล้วกด Ctrl+A และ Ctrl+C เพื่อคัดลอกได้ทันที')
-st.text_area('คำสั่งพร้อมใช้ (คัดลอกได้)',value=prompt,height=260,key=f'prompt_display_{selected_prompt_type}_{photo_task if selected_prompt_type == "แต่งภาพบุคคล" else graphic_task if selected_prompt_type == "ออกแบบกราฟิก" else work}')
+st.text_area('คำสั่งพร้อมใช้ (คัดลอกได้)',value=prompt,height=260,key=f'prompt_display_{hash(prompt)}')
 
 # Additional mobile-friendly copy button; original buttons remain unchanged.
 safe_mobile_prompt=html.escape(prompt,quote=True)
