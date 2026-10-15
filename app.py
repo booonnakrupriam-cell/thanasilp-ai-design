@@ -130,50 +130,70 @@ WORK = ['ออกแบบป้ายใหม่','ฟื้นฟูภา�
 TYPES = ['ร้านค้า / อาหาร / บริการ','งานบุญ / กฐิน / วัด','ราชการ / โรงเรียน / โครงการ','งานศพ / อาลัย','เกษียณ / แสดงความยินดี','งานวิชาการ / ประชาสัมพันธ์','ป้ายชื่อหน่วยงาน','อื่น ๆ']
 STYLES = ['เรียบหรู มืออาชีพ','สุภาพ เป็นทางการ','โมเดิร์น ทันสมัย','ลายไทยประยุกต์','มินิมอล สะอาดตา','สีสันสดใส โดดเด่น','ตัวหนังสือสามมิติ','ตามภาพตัวอย่าง']
 
-st.markdown('<div class="th-section-h">✦ สร้างคำสั่งออกแบบป้ายด้วย AI</div>',unsafe_allow_html=True)
-st.caption('เลือกประเภทงาน ขนาดป้าย และรูปแบบ แล้วนำคำสั่งไปใช้ใน ChatGPT หรือ Gemini')
+tab_sign,tab_photo,tab_graphic=st.tabs(['🪧 ออกแบบป้าย','📸 แต่งภาพบุคคล','🎨 ออกแบบกราฟิก'])
 
-with st.container(border=True):
-    first,second=st.columns(2)
-    with first:
-        section_title('1. ประเภทงาน')
-        work=st.selectbox('ประเภทงาน',WORK,label_visibility='collapsed')
-    with second:
-        section_title('2. ประเภทป้าย')
-        kind=st.selectbox('ประเภทป้าย',TYPES,label_visibility='collapsed')
+with tab_sign:
+    st.markdown('<div class="th-section-h">✦ สร้างคำสั่งออกแบบป้ายด้วย AI</div>',unsafe_allow_html=True)
+    st.caption('เลือกประเภทงาน ขนาดป้าย และรูปแบบ แล้วนำคำสั่งไปใช้ใน ChatGPT หรือ Gemini')
 
-    cs1,cs2=st.columns([1.15,1])
-    with cs1:
-        section_title('3. ขนาดและทิศทางป้าย')
-        direction=st.radio('ทิศทาง',['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส','ตามสัดส่วนต้นฉบับ'],horizontal=False)
-        preset=st.selectbox('ขนาดสำเร็จรูป (ซม.)',['กำหนดเอง','200 × 100','300 × 150','400 × 200','120 × 240'])
-    with cs2:
-        section_title('4. สไตล์')
-        style=st.selectbox('สไตล์',STYLES,label_visibility='collapsed')
-        st.caption('เลือกสไตล์การออกแบบให้เหมาะกับงาน')
-        st.info('แนบรูปตัวอย่างใน ChatGPT หรือ Gemini ได้โดยตรง',icon='🎨')
-    dims={'200 × 100':(200,100),'300 × 150':(300,150),'400 × 200':(400,200),'120 × 240':(120,240)}
-    if preset != 'กำหนดเอง':
-        a,b=dims[preset]
-        if direction=='แนวตั้ง' and a>b: a,b=b,a
-        if direction=='แนวนอน' and a<b: a,b=b,a
-        if direction=='สี่เหลี่ยมจัตุรัส': a=b=max(a,b)
-        if st.session_state.get('_last_preset')!=(preset,direction):
-            st.session_state['width_cm']=float(a)
-            st.session_state['height_cm']=float(b)
-            st.session_state['_last_preset']=(preset,direction)
-    cw,ch=st.columns(2)
-    with cw: w=st.number_input('กว้าง (ซม.)',min_value=1.0,value=300.0,step=10.0,key='width_cm')
-    with ch: h=st.number_input('สูง (ซม.)',min_value=1.0,value=150.0,step=10.0,key='height_cm')
-    actual='แนวนอน' if w>h else 'แนวตั้ง' if h>w else 'สี่เหลี่ยมจัตุรัส'
-    if direction in ['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส'] and direction!=actual:
-        st.warning(f'ขนาดที่กรอกเป็น{actual} แต่เลือก {direction} โปรดแก้ให้ตรงกัน')
-    section_title('5. ข้อความบนป้าย')
-    textless=st.checkbox('ไม่ใส่ข้อความ จะเพิ่มเอง')
-    wording=st.text_area('ข้อความบนป้าย',label_visibility='collapsed',height=125,disabled=textless,placeholder='พิมพ์ข้อความที่ต้องการให้ปรากฏบนป้าย')
-    section_title('6. รายละเอียดเพิ่มเติม')
-    opts=st.multiselect('ตัวเลือกพิเศษ',['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','เน้นรูปภาพ','คงโครงสร้างเดิม','ตกแต่งเพิ่มเติมอัตโนมัติ','ไม่ใส่ตาไก่','เพิ่มพื้นที่ว่างสำหรับข้อความ','คงใบหน้าบุคคลตามต้นฉบับ','ลบโลโก้เดิม'],default=['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','ตกแต่งเพิ่มเติมอัตโนมัติ'])
-    extra=st.text_area('รายละเอียดเพิ่มเติม (ถ้ามี)',height=83)
+    with st.container(border=True):
+        first,second=st.columns(2)
+        with first:
+            section_title('1. ประเภทงาน')
+            work=st.selectbox('ประเภทงาน',WORK,label_visibility='collapsed')
+        with second:
+            section_title('2. ประเภทป้าย')
+            kind=st.selectbox('ประเภทป้าย',TYPES,label_visibility='collapsed')
+
+        cs1,cs2=st.columns([1.15,1])
+        with cs1:
+            section_title('3. ขนาดและทิศทางป้าย')
+            direction=st.radio('ทิศทาง',['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส','ตามสัดส่วนต้นฉบับ'],horizontal=False)
+            preset=st.selectbox('ขนาดสำเร็จรูป (ซม.)',['กำหนดเอง','200 × 100','300 × 150','400 × 200','120 × 240'])
+        with cs2:
+            section_title('4. สไตล์')
+            style=st.selectbox('สไตล์',STYLES,label_visibility='collapsed')
+            st.caption('เลือกสไตล์การออกแบบให้เหมาะกับงาน')
+            st.info('แนบรูปตัวอย่างใน ChatGPT หรือ Gemini ได้โดยตรง',icon='🎨')
+        dims={'200 × 100':(200,100),'300 × 150':(300,150),'400 × 200':(400,200),'120 × 240':(120,240)}
+        if preset != 'กำหนดเอง':
+            a,b=dims[preset]
+            if direction=='แนวตั้ง' and a>b: a,b=b,a
+            if direction=='แนวนอน' and a<b: a,b=b,a
+            if direction=='สี่เหลี่ยมจัตุรัส': a=b=max(a,b)
+            if st.session_state.get('_last_preset')!=(preset,direction):
+                st.session_state['width_cm']=float(a)
+                st.session_state['height_cm']=float(b)
+                st.session_state['_last_preset']=(preset,direction)
+        cw,ch=st.columns(2)
+        with cw: w=st.number_input('กว้าง (ซม.)',min_value=1.0,value=300.0,step=10.0,key='width_cm')
+        with ch: h=st.number_input('สูง (ซม.)',min_value=1.0,value=150.0,step=10.0,key='height_cm')
+        actual='แนวนอน' if w>h else 'แนวตั้ง' if h>w else 'สี่เหลี่ยมจัตุรัส'
+        if direction in ['แนวนอน','แนวตั้ง','สี่เหลี่ยมจัตุรัส'] and direction!=actual:
+            st.warning(f'ขนาดที่กรอกเป็น{actual} แต่เลือก {direction} โปรดแก้ให้ตรงกัน')
+        section_title('5. ข้อความบนป้าย')
+        textless=st.checkbox('ไม่ใส่ข้อความ จะเพิ่มเอง')
+        wording=st.text_area('ข้อความบนป้าย',label_visibility='collapsed',height=125,disabled=textless,placeholder='พิมพ์ข้อความที่ต้องการให้ปรากฏบนป้าย')
+        section_title('6. รายละเอียดเพิ่มเติม')
+        opts=st.multiselect('ตัวเลือกพิเศษ',['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','เน้นรูปภาพ','คงโครงสร้างเดิม','ตกแต่งเพิ่มเติมอัตโนมัติ','ไม่ใส่ตาไก่','เพิ่มพื้นที่ว่างสำหรับข้อความ','คงใบหน้าบุคคลตามต้นฉบับ','ลบโลโก้เดิม'],default=['Ultra-Sharp','เน้นข้อความให้อ่านชัด','พร้อมสำหรับงานพิมพ์','ตกแต่งเพิ่มเติมอัตโนมัติ'])
+        extra=st.text_area('รายละเอียดเพิ่มเติม (ถ้ามี)',height=83)
+
+
+with tab_photo:
+    st.markdown('### 📸 แต่งภาพบุคคล / ฟื้นฟูภาพ')
+    st.caption('เลือกงานแล้วแนบรูปต้นฉบับใน ChatGPT หรือ Gemini เพื่อใช้เป็นภาพอ้างอิง')
+    photo_task=st.selectbox('ประเภทงานแต่งภาพ', ['ฟื้นฟูภาพเก่า / เพิ่มความคมชัด','ภาพชุดแต่งงาน (ใช้ใบหน้าอ้างอิง)','ภาพครอบครัว (ใช้ใบหน้าหลายภาพ)','เปลี่ยนพื้นหลัง / สถานที่ทั่วโลก','เปลี่ยนชุดไทย / ชุดสูท / ชุดอื่น ๆ','ลบคนหรือสิ่งของออกจากภาพ','รูปงานบวช / ภาพนาค','แต่งสีผิว รูปร่าง ดวงตา รอยยิ้ม','ภาพติดบัตร / ภาพหน้าตรง','ภาพเหมือนถ่ายในสตูดิโอ'],key='photo_task')
+    photo_details=st.text_area('รายละเอียดภาพที่ต้องการ เช่น ชุด สถานที่ จำนวนคน ฉากหลัง',height=110,key='photo_details')
+    photo_ratio=st.selectbox('สัดส่วนภาพ',['คงสัดส่วนต้นฉบับ','3:4 แนวตั้ง','4:3 แนวนอน','1:1 สี่เหลี่ยม','9:16 แนวตั้ง','16:9 แนวนอน'],key='photo_ratio')
+    photo_real=st.checkbox('รักษาใบหน้าและเอกลักษณ์บุคคลตามภาพต้นฉบับ',value=True,key='photo_real')
+    st.caption('ภาพ AI อาจไม่เหมือนต้นฉบับทุกจุด และต้องแนบภาพบุคคลด้วยตนเองในบริการ AI ที่เลือก')
+with tab_graphic:
+    st.markdown('### ✨ ออกแบบกราฟิก')
+    graphic_task=st.selectbox('ประเภทงานกราฟิก',['ออกแบบโลโก้','ออกแบบกรอบ QR Code','ออกแบบป้ายขายของ','ออกแบบตารางเรียน / ตารางกิจกรรม','ออกแบบงานกราฟิกอื่น ๆ'],key='graphic_task')
+    graphic_text=st.text_area('ข้อความ / รายการ / ชื่อร้าน / ตารางเรียน',height=130,key='graphic_text')
+    graphic_details=st.text_area('รายละเอียด สี รูปแบบ ขนาด และข้อมูลอื่น ๆ',height=95,key='graphic_details')
+    if graphic_task=='ออกแบบกรอบ QR Code':
+        st.info('เพื่อให้สแกนได้จริง ให้นำ QR Code ที่สร้างจากลิงก์จริงมาใส่ในกรอบที่ออกแบบ ไม่ใช้ QR Code ที่ AI วาดขึ้น')
 
 def get_font_guideline(kind, style):
     """เลือกแนวทางจัดฟอนต์อัตโนมัติ ให้หัวเรื่องและรายละเอียดแตกต่างแต่ยังอ่านง่าย"""
@@ -211,7 +231,48 @@ portrait_restore_guideline = (
 is_portrait_restore = (work == 'ฟื้นฟูภาพบุคคล / ภาพเก่า')
 portrait_instruction = portrait_restore_guideline if is_portrait_restore else ''
 
-prompt='\n'.join([
+# The three tabs share the same output controls, but generate prompts for their own work type.
+TASK_GUIDES = {
+    "ฟื้นฟูภาพเก่า / เพิ่มความคมชัด": "คืนสีและรายละเอียดที่ยังตรวจสอบได้ ลดรอยขีดข่วนและความพร่า ไม่สร้างหรือเปลี่ยนใบหน้าใหม่",
+    "ภาพชุดแต่งงาน (ใช้ใบหน้าอ้างอิง)": "ใช้ใบหน้าจากภาพอ้างอิง สร้างชุดแต่งงานและฉากงานแต่ง โดยรักษาเอกลักษณ์บุคคลเดิม",
+    "ภาพครอบครัว (ใช้ใบหน้าหลายภาพ)": "นำบุคคลจากภาพอ้างอิงแต่ละใบมารวมเป็นภาพครอบครัว จัดตำแหน่งและแสงให้สอดคล้อง ห้ามสลับใบหน้า",
+    "เปลี่ยนพื้นหลัง / สถานที่ทั่วโลก": "เปลี่ยนเฉพาะฉากหลังเป็นสถานที่ที่ระบุในรายละเอียด ให้แสงและมุมกล้องสมจริง",
+    "เปลี่ยนชุดไทย / ชุดสูท / ชุดอื่น ๆ": "เปลี่ยนชุดตามที่ระบุ เช่น ชุดไทย ชุดสูท หรือชุดอื่น แต่รักษาใบหน้าและบุคลิกเดิม",
+    "ลบคนหรือสิ่งของออกจากภาพ": "ลบเฉพาะบุคคลหรือวัตถุที่ระบุ เติมพื้นหลังอย่างแนบเนียน โดยคงบุคคลหลักและส่วนอื่น",
+    "รูปงานบวช / ภาพนาค": "สร้างภาพที่ระลึกงานบวชจากภาพบุคคลอ้างอิง แต่งชุดและฉากตามที่กำหนด โดยรักษาใบหน้าเดิม",
+    "แต่งสีผิว รูปร่าง ดวงตา รอยยิ้ม": "ปรับเฉพาะจุดที่ผู้ใช้ร้องขออย่างเป็นธรรมชาติ ไม่เปลี่ยนเอกลักษณ์ใบหน้าหรือสัดส่วนจนผิดคน",
+    "ภาพติดบัตร / ภาพหน้าตรง": "ปรับภาพหน้าตรง แสงสม่ำเสมอ พื้นหลังและชุดตามที่กำหนด รักษาเอกลักษณ์เดิม; ตรวจข้อกำหนดรูปสำหรับเอกสารราชการจริง",
+    "ภาพเหมือนถ่ายในสตูดิโอ": "จัดแสงฉากและองค์ประกอบแบบสตูดิโอ พร้อมรายละเอียดผิวและเส้นผมสมจริง โดยรักษาใบหน้าเดิม",
+    "ออกแบบโลโก้": "สร้างแนวคิดตราสัญลักษณ์เรียบชัด จดจำง่าย ตรงชื่อธุรกิจ เหมาะต่อการต่อยอดเป็นเวกเตอร์",
+    "ออกแบบกรอบ QR Code": "ออกแบบกรอบ พื้นหลัง และข้อความรอบพื้นที่ QR Code โดยเว้นช่องกลางให้แทรก QR Code จริง ห้ามสร้าง QR Code ปลอมด้วยภาพ AI",
+    "ออกแบบป้ายขายของ": "ออกแบบป้ายขายของเน้นชื่อสินค้า ราคา จุดขายและข้อมูลติดต่อ อ่านง่ายสีตัดพื้น",
+    "ออกแบบตารางเรียน / ตารางกิจกรรม": "ออกแบบตารางอ่านง่าย ช่องวันเวลาเป็นระเบียบ ตรวจความครบถ้วนและตัวสะกด; หากไม่มีข้อมูลให้เว้นช่องสำหรับกรอก",
+    "ออกแบบงานกราฟิกอื่น ๆ": "ออกแบบกราฟิกตามรายละเอียดที่ระบุ รักษาตัวสะกดและสัดส่วนที่ต้องการ",
+}
+def build_photo_prompt():
+    parts=[
+        'แก้ไขหรือสร้างภาพบุคคลจากรูปอ้างอิงตามรายละเอียดนี้',
+        f'ประเภทงาน: {photo_task}',
+        f'สัดส่วนภาพ: {photo_ratio}',
+        f'รายละเอียด: {photo_details or "ใช้ภาพที่แนบเป็นต้นฉบับ"}',
+        TASK_GUIDES[photo_task],
+        'แสง สี เส้นผม ผิวและเสื้อผ้าสมจริง รายละเอียดคมชัดระดับสูงตามที่ระบบรองรับ'
+    ]
+    if photo_real:
+        parts.append('รักษาอัตลักษณ์ของบุคคลในภาพอ้างอิง โดยเฉพาะดวงตา จมูก ปาก โครงหน้า และทรงผม ไม่เปลี่ยนเป็นคนอื่น')
+    if photo_task=='ฟื้นฟูภาพเก่า / เพิ่มความคมชัด':
+        parts.append(portrait_restore_guideline)
+    return '\\n'.join(parts)
+def build_graphic_prompt():
+    return '\\n'.join([
+        'ออกแบบงานกราฟิกตามข้อมูลต่อไปนี้',
+        f'ประเภทงาน: {graphic_task}',
+        f'ข้อความที่ต้องใส่: {graphic_text or "ไม่มีข้อความระบุ"}',
+        f'รายละเอียด: {graphic_details or "ออกแบบให้เหมาะกับงาน"}',
+        TASK_GUIDES[graphic_task],
+        'จัดองค์ประกอบให้สวยงาม คมชัด อ่านตัวอักษรภาษาไทยง่าย และรักษาข้อความตามต้นฉบับ'
+    ])
+sign_prompt='\n'.join([
     'เริ่มออกแบบป้ายตามรายละเอียดนี้',
     f'ประเภทงาน: {work}',
     f'ประเภทป้าย: {kind}',
@@ -228,6 +289,11 @@ prompt='\n'.join([
     portrait_instruction,
     'เน้นภาพ Ultra-Sharp คุณภาพสูงสุดที่ระบบรองรับ และหากเลือกไม่ใส่ข้อความ ห้ามสร้างตัวอักษร'
 ])
+# Use a visible selection to control which tab's prompt is sent; Streamlit tabs do not expose active tab to Python.
+st.markdown('#### เลือกหมวดคำสั่งที่จะส่ง')
+selected_prompt_type=st.radio('เลือกคำสั่งที่ต้องการใช้งาน',['ออกแบบป้าย','แต่งภาพบุคคล','ออกแบบกราฟิก'],horizontal=True,label_visibility='collapsed',key='selected_prompt_type')
+prompt=sign_prompt if selected_prompt_type=='ออกแบบป้าย' else build_photo_prompt() if selected_prompt_type=='แต่งภาพบุคคล' else build_graphic_prompt()
+
 section_title('7. ส่งคำสั่งไปสร้างภาพ')
 st.caption('คำสั่งของคุณอยู่ในช่องด้านล่าง สามารถคลิกแล้วกด Ctrl+A และ Ctrl+C เพื่อคัดลอกได้ทันที')
 st.text_area('คำสั่งพร้อมใช้ (คัดลอกได้)',value=prompt,height=260,key='prompt_display')
