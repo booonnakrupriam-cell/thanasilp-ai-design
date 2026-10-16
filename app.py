@@ -130,7 +130,7 @@ WORK = ['ออกแบบป้ายใหม่','ฟื้นฟูภา�
 TYPES = ['ร้านค้า / อาหาร / บริการ','งานบุญ / กฐิน / วัด','ราชการ / โรงเรียน / โครงการ','งานศพ / อาลัย','เกษียณ / แสดงความยินดี','งานวิชาการ / ประชาสัมพันธ์','ป้ายชื่อหน่วยงาน','อื่น ๆ']
 STYLES = ['เรียบหรู มืออาชีพ','สุภาพ เป็นทางการ','โมเดิร์น ทันสมัย','ลายไทยประยุกต์','มินิมอล สะอาดตา','สีสันสดใส โดดเด่น','ตัวหนังสือสามมิติ','ตามภาพตัวอย่าง']
 
-tab_sign,tab_photo,tab_graphic,tab_extra=st.tabs(['🪧 ออกแบบป้าย','📸 แต่งภาพบุคคล','🎨 ออกแบบกราฟิก','🧰 เครื่องมือพิเศษ'])
+tab_sign,tab_photo,tab_graphic,tab_extra,tab_shirt_relief=st.tabs(['🪧 ออกแบบป้าย','📸 แต่งภาพบุคคล','🎨 ออกแบบกราฟิก','🧰 เครื่องมือพิเศษ','👕 เสื้อพิมพ์ลาย / รูปนูน 3D'])
 
 with tab_sign:
     st.markdown('<div class="th-section-h">✦ สร้างคำสั่งออกแบบป้ายด้วย AI</div>',unsafe_allow_html=True)
@@ -232,6 +232,20 @@ with tab_extra:
     special_details=st.text_area('รายละเอียดเพิ่มเติม เช่น สี ขนาด ชุด ฉาก องค์ประกอบ',height=90,key='special_details')
     special_ratio=st.selectbox('สัดส่วน', ['ตามต้นฉบับ / ตามรายละเอียด','แนวนอน 16:9','แนวตั้ง 3:4','สี่เหลี่ยม 1:1','แนวนอน 2:1'],key='special_ratio')
     st.caption('หากใช้อ้างอิงภาพหรือใบหน้า ให้นำภาพไปแนบใน ChatGPT หรือ Gemini หลังเปิดแชท')
+
+
+with tab_shirt_relief:
+    st.markdown('### 👕 เสื้อพิมพ์ลาย / รูปนูน 2.5D–3D')
+    direct_task=st.radio('เลือกงาน',['เสื้อพิมพ์ลาย','แปลงรูปนูน 2.5D / 3D'],horizontal=True,key='direct_task')
+    if direct_task=='เสื้อพิมพ์ลาย':
+        direct_shirt=st.selectbox('ชนิดเสื้อ',['เสื้อคอกลม','เสื้อโปโล','เสื้อกีฬา','เสื้อทีม','เสื้อแฟชั่น'],key='direct_shirt')
+        direct_view=st.selectbox('ด้านที่ต้องการ',['ด้านหน้า','ด้านหลัง','ด้านหน้าและด้านหลัง','รอบตัว'],key='direct_shirt_view')
+    else:
+        direct_relief=st.selectbox('รูปแบบงานนูน',['2.5D Bas-Relief','3D Sculpture / Multi-view'],key='direct_relief')
+        direct_relief_view=st.selectbox('มุมมอง',['หน้าตรง Orthographic','หน้า + ซ้าย + ขวา','หน้า + ซ้าย + ขวา + หลัง','หลายมุม Orthographic แยกภาพ'],key='direct_relief_view')
+    direct_text=st.text_area('ข้อความ / ลวดลาย / สิ่งที่ต้องการสร้าง',height=110,key='direct_text')
+    direct_details=st.text_area('รายละเอียดเพิ่มเติม (สี รูปภาพอ้างอิง ขนาด)',height=90,key='direct_details')
+    st.caption('เลือกหมวด “เสื้อพิมพ์ลาย / รูปนูน 3D” ที่หัวข้อส่งคำสั่งด้านล่างเพื่อใช้ข้อมูลแท็บนี้')
 
 def get_font_guideline(kind, style):
     """เลือกแนวทางจัดฟอนต์อัตโนมัติ ให้หัวเรื่องและรายละเอียดแตกต่างแต่ยังอ่านง่าย"""
@@ -385,10 +399,25 @@ sign_prompt='\n'.join([
     portrait_instruction,
     'เน้นภาพ Ultra-Sharp คุณภาพสูงสุดที่ระบบรองรับ และหากเลือกไม่ใส่ข้อความ ห้ามสร้างตัวอักษร'
 ])
+def build_direct_prompt():
+    pieces=[
+        f'ประเภทงาน: {direct_task}',
+        f'สิ่งที่ต้องการ: {direct_text or "ใช้รูปภาพอ้างอิงที่แนบ"}',
+        f'รายละเอียด: {direct_details or "ออกแบบให้เหมาะกับงาน"}',
+        SPECIAL_GUIDES[direct_task]
+    ]
+    if direct_task=='เสื้อพิมพ์ลาย':
+        pieces += [f'ชนิดเสื้อ: {direct_shirt}', f'ด้านที่ต้องการ: {direct_view}',
+                   'ขอทั้งลายพิมพ์แบนและภาพจำลองเสื้อ คงองค์ประกอบและข้อความตรงต้นฉบับ พร้อมเป็นแนวทางการผลิต']
+    else:
+        pieces += [f'ชนิดงานนูน: {direct_relief}',f'มุมมองที่ต้องการ: {direct_relief_view}',
+                   'Create an ultra-detailed Thai bas-relief sculpture reference with smooth polished ivory white plaster, pure black #000000 background, orthographic views, flat front lighting, crisp depth layers, bold clean Thai Kanok ornaments where relevant, perfectly clean matte sculpted surfaces without pores or grain, distinct CNC-friendly relief contours and high contrast. 2.5D: produce one frontal shallow bas-relief. 3D: show consistent front, left, right and back orthographic views as selected; do not invent geometry not present in reference. Aim for 16K quality within system limits; image reference only, not a CNC-ready STL or depth map.']
+    return '\n'.join(pieces)
+
 # Use a visible selection to control which tab's prompt is sent; Streamlit tabs do not expose active tab to Python.
 st.markdown('#### เลือกหมวดคำสั่งที่จะส่ง')
-selected_prompt_type=st.radio('เลือกคำสั่งที่ต้องการใช้งาน',['ออกแบบป้าย','แต่งภาพบุคคล','ออกแบบกราฟิก','เครื่องมือพิเศษ'],horizontal=True,label_visibility='collapsed',key='selected_prompt_type')
-prompt=sign_prompt if selected_prompt_type=='ออกแบบป้าย' else build_photo_prompt() if selected_prompt_type=='แต่งภาพบุคคล' else build_graphic_prompt() if selected_prompt_type=='ออกแบบกราฟิก' else build_special_prompt()
+selected_prompt_type=st.radio('เลือกคำสั่งที่ต้องการใช้งาน',['ออกแบบป้าย','แต่งภาพบุคคล','ออกแบบกราฟิก','เครื่องมือพิเศษ','เสื้อพิมพ์ลาย / รูปนูน 3D'],horizontal=True,label_visibility='collapsed',key='selected_prompt_type')
+prompt=sign_prompt if selected_prompt_type=='ออกแบบป้าย' else build_photo_prompt() if selected_prompt_type=='แต่งภาพบุคคล' else build_graphic_prompt() if selected_prompt_type=='ออกแบบกราฟิก' else build_special_prompt() if selected_prompt_type=='เครื่องมือพิเศษ' else build_direct_prompt()
 
 section_title('7. ส่งคำสั่งไปสร้างภาพ')
 st.caption('คำสั่งของคุณอยู่ในช่องด้านล่าง สามารถคลิกแล้วกด Ctrl+A และ Ctrl+C เพื่อคัดลอกได้ทันที')
