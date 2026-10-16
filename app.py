@@ -203,12 +203,23 @@ with tab_extra:
         'ตัวหนังสือ / ไดคัท':['ตัวหนังสือ 3D / ไดคัท'],
         'ปรับปรุงรูปถ่าย':['ซ่อมภาพเก่า / ภาพขาด'],
         'เวกเตอร์ / งานผลิต':['เวกเตอร์ / CNC / เลเซอร์'],
-        'ออกแบบสินค้า':['ออกแบบลายเสื้อ','ออกแบบเมนูอาหาร'],
+        'ออกแบบสินค้า':['ออกแบบลายเสื้อ','เสื้อพิมพ์ลาย','ออกแบบเมนูอาหาร'],
         'ภาพและสื่อออนไลน์':['ภาพอาลัย / กรอบรูปงานศพ','โพสต์ Facebook / TikTok'],
+        'งานนูน / Relief 3D':['แปลงรูปนูน 2.5D / 3D'],
         'คำสั่งสำเร็จรูป':['คำสั่งสำเร็จรูป']
     }
     special_category=st.selectbox('หมวดงาน',list(special_categories),key='special_category')
     special_task=st.selectbox('ฟังก์ชัน',special_categories[special_category],key='special_task')
+    relief_mode=''
+    relief_view=''
+    shirt_style=''
+    shirt_view=''
+    if special_task=='แปลงรูปนูน 2.5D / 3D':
+        relief_mode=st.selectbox('ประเภทงานนูน',['2.5D Bas-Relief','3D Sculpture / Multi-view'],key='relief_mode')
+        relief_view=st.selectbox('มุมมอง',['หน้าตรง Orthographic','หน้า + ซ้าย + ขวา','หน้า + ซ้าย + ขวา + หลัง','หลายมุม Orthographic (แยกภาพแต่ละมุม)'],key='relief_view')
+    if special_task=='เสื้อพิมพ์ลาย':
+        shirt_style=st.selectbox('ชนิดเสื้อ',['เสื้อคอกลม','เสื้อโปโล','เสื้อกีฬา','เสื้อทีม','เสื้อแฟชั่น'],key='shirt_style')
+        shirt_view=st.selectbox('ด้านของเสื้อ',['ด้านหน้า','ด้านหลัง','ด้านหน้าและด้านหลัง','รอบตัว'],key='shirt_view')
     special_template=''
     if special_task=='คำสั่งสำเร็จรูป':
         special_template=st.selectbox('เลือกคำสั่งด่วน',[
@@ -284,6 +295,8 @@ SPECIAL_GUIDES={
     'ออกแบบเมนูอาหาร':'จัดเมนูอาหารพร้อมภาพประกอบน่ารับประทาน ชื่ออาหารและราคาตรงตามที่ให้ อ่านง่าย ภาพอาหารเหมาะกับรายการ ไม่แต่งข้อความเกินจริง',
     'ภาพอาลัย / กรอบรูปงานศพ':'ออกแบบภาพอาลัยอย่างสุภาพ ดอกไม้และพื้นหลังพอเหมาะ รักษาใบหน้าเดิมของบุคคลอย่างเคร่งครัด และสะกดชื่อ วันเดือนปี สิริอายุให้ตรงต้นฉบับ',
     'โพสต์ Facebook / TikTok':'ออกแบบสื่อโปรโมทสำหรับ Facebook หรือ TikTok พาดหัวเด่น อ่านง่ายบนมือถือ เว้นระยะขอบไม่ตัดข้อความ และใช้ขนาดภาพตามที่กำหนด',
+    'เสื้อพิมพ์ลาย':'ออกแบบลายพิมพ์ลงเสื้อจริง สีสด คมชัด รายละเอียดเหมาะกับชนิดผ้าและเทคนิคการพิมพ์ สะกดชื่อทีมและโลโก้ตรงต้นฉบับ แสดงแบบเสื้อด้านที่เลือก',
+    'แปลงรูปนูน 2.5D / 3D':'แปลงภาพอ้างอิงเป็นงานประติมากรรมนูนแบบ 2.5D หรือ 3D หลายมุม โครงสร้างสะอาด แยกชั้นความลึก คมชัดเหมาะใช้เป็นต้นแบบ CNC และงานแกะสลัก',
     'คำสั่งสำเร็จรูป':'สร้างงานจากคำสั่งด่วนตามตัวเลือกที่ระบุ โดยรักษาภาพอ้างอิง ข้อความ และข้อกำหนดอย่างเคร่งครัด'
 }
 PRESET_GUIDES={
@@ -306,6 +319,27 @@ def build_special_prompt():
         f'รายละเอียด: {special_details or "ออกแบบให้เหมาะกับประเภทงาน"}',
         SPECIAL_GUIDES[special_task]
     ]
+    if special_task=='เสื้อพิมพ์ลาย':
+        pieces.extend([
+            f'ชนิดเสื้อ: {shirt_style}',f'มุมแสดงแบบ: {shirt_view}',
+            'ออกแบบแพตเทิร์นลายเสื้อพิมพ์ลายจริง ทั้งภาพต้นแบบลายแบนและภาพจำลองการสวมใส่ตามมุมที่เลือก โดยคงตัวหนังสือ โลโก้ และตำแหน่งให้ตรงตามที่ระบุ'
+        ])
+    if special_task=='แปลงรูปนูน 2.5D / 3D':
+        pieces.extend([
+            f'ชนิดงานนูน: {relief_mode}',f'มุมที่ต้องการ: {relief_view}',
+            'Create a highly detailed Thai bas-relief sculpture in ultra-high resolution 16K, subject based on the attached reference. '
+            'Smooth polished white ivory plaster or creamy white stone, flawless matte surface, no grain, cracks, scratches or pores. '
+            'Deep clean relief with crisp sharp edges, separated depth layers, large ornate Thai Kanok motifs when appropriate to the source, '
+            'balanced symmetry when the reference is symmetrical, bold CNC-friendly contours and reduced tiny noisy details. '
+            'Strong relief visibility, uniform grayscale depth-map-inspired shading, solid pure black (#000000) background, '
+            'no dramatic side lighting, no perspective distortion. Clearly defined flowing contours and anatomical transitions where relevant. '
+            'Museum-quality, ultra-clean and detailed, depth-optimized appearance suitable as an image reference for SculptOK or CNC relief extraction. '
+            'For 2.5D produce one orthographic front elevation with a consistent shallow relief depth; '
+            'for 3D multi-view produce front, left, right and back only as requested, all showing the same object with consistent geometry and aligned scale, '
+            'each orthographic view clearly separated, without hallucinated decorative details. '
+            'Aim for ultra-sharp 16K aesthetics within the image generator resolution limits. '
+            'This is an image / prompt concept, not a manufactured 3D mesh, watertight STL, or verified CNC depth map.'
+        ])
     if special_template:
         pieces.extend([f'คำสั่งด่วน: {special_template}',PRESET_GUIDES[special_template]])
     pieces.append('สร้างผลลัพธ์ที่คมชัดตามความสามารถของระบบ ตรวจความถูกต้องของข้อความ และอย่าเปลี่ยนใบหน้าเดิมหากมีบุคคลอ้างอิง')
