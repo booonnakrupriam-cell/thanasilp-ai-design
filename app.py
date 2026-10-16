@@ -402,12 +402,80 @@ sign_prompt='\n'.join([
     portrait_instruction,
     'เน้นภาพ Ultra-Sharp คุณภาพสูงสุดที่ระบบรองรับ และหากเลือกไม่ใส่ข้อความ ห้ามสร้างตัวอักษร'
 ])
+RELIEF_MASTER_PROMPT = '''Create ................a highly detailed Thai bas-relief sculpture in ultra-high resolution 16K.
+
+Material & Surface
+
+Smooth polished white ivory plaster.
+Creamy white stone with a soft warm ivory tone.
+Perfectly smooth matte surface.
+No rough texture, no grain, no cracks, no scratches.
+Clean sculptural finish.
+Deep relief carving with crisp sharp edges.
+Strong depth separation for CNC and 3D relief extraction.
+High-quality museum-grade sculpture.
+
+Lighting
+
+Orthographic front view.
+Flat frontal lighting.
+No dramatic side lighting.
+No perspective distortion.
+Uniform grayscale depth map style.
+Strong relief visibility.
+Pure solid black background (#000000).
+High contrast between sculpture and background.
+
+Sculpture Style
+
+Thai traditional ornamental sculpture.
+Elegant symmetrical composition.
+Deep carved Thai Kanok patterns.
+Large clean ornaments.
+Reduced tiny noisy details.
+Bold relief optimized for carving.
+Every ornament clearly separated.
+Perfect symmetry.
+
+Body Surface
+
+Smooth polished anatomy.
+Clearly defined muscles.
+Soft realistic anatomical transitions.
+Clean flowing contours.
+Crisp edges.
+No pores.
+No skin texture.
+No imperfections.
+
+Overall Quality
+
+Ultra sharp.
+Maximum detail.
+CNC relief optimized.
+SculptOK optimized.
+Depth optimized.
+High contrast.
+Museum-quality sculpture.
+Print-ready.
+Ultra clean geometry.
+16K.'''
+
 def build_direct_prompt(mode):
     if mode=='เสื้อพิมพ์ลาย':
         return '\n'.join([f'ประเภทงาน: เสื้อพิมพ์ลาย',f'ชนิดเสื้อ: {direct_shirt}',f'ด้านที่ต้องการ: {direct_view}',f'ลวดลาย/ข้อความ: {shirt_text or "ใช้รูปภาพอ้างอิงที่แนบ"}',f'รายละเอียด: {shirt_details or "ออกแบบให้เหมาะกับงาน"}',SPECIAL_GUIDES['เสื้อพิมพ์ลาย'],'ขอทั้งลายพิมพ์แบนและภาพจำลองเสื้อ คงองค์ประกอบและข้อความตรงต้นฉบับ พร้อมเป็นแนวทางการผลิต'])
-    pieces=[f'ประเภทงาน: แปลงรูปนูน 2.5D / 3D',f'สิ่งที่ต้องการ: {relief_text or "ใช้รูปภาพอ้างอิงที่แนบ"}',f'รายละเอียด: {relief_details or "ออกแบบให้เหมาะกับงาน"}',SPECIAL_GUIDES['แปลงรูปนูน 2.5D / 3D']]
-    pieces += [f'ชนิดงานนูน: {direct_relief}',f'มุมมองที่ต้องการ: {direct_relief_view}',
-                   'Create an ultra-detailed Thai bas-relief sculpture reference with smooth polished ivory white plaster, pure black #000000 background, orthographic views, flat front lighting, crisp depth layers, bold clean Thai Kanok ornaments where relevant, perfectly clean matte sculpted surfaces without pores or grain, distinct CNC-friendly relief contours and high contrast. 2.5D: produce one frontal shallow bas-relief. 3D: show consistent front, left, right and back orthographic views as selected; do not invent geometry not present in reference. Aim for 16K quality within system limits; image reference only, not a CNC-ready STL or depth map.']
+    pieces=[
+        'ประเภทงาน: แปลงรูปนูน 2.5D / 3D',
+        f'สิ่งที่ต้องการสร้าง: {relief_text or "ใช้ภาพอ้างอิงที่แนบ"}',
+        f'รายละเอียดเพิ่มเติม: {relief_details or "รักษารูปทรงต้นฉบับ"}',
+        f'ชนิดงานนูน: {direct_relief}',
+        f'มุมมอง: {direct_relief_view}',
+        RELIEF_MASTER_PROMPT,
+        'ใช้เนื้อหาของภาพอ้างอิงเป็นต้นแบบหลัก ถ้าไม่มีลายไทยในต้นฉบับอย่าเติมลายไทยโดยพลการ '
+        'หากเลือก 2.5D ให้ทำภาพหน้าตรง Orthographic; หากเลือก 3D หลายมุม ให้แสดงมุมตามที่เลือก '
+        'คงรูปทรง รายละเอียด และสัดส่วนของวัตถุให้สอดคล้องกันทุกมุม '
+        'คำว่า 16K คือเป้าหมายคุณภาพภาพตามข้อจำกัดระบบ ผลลัพธ์เป็นภาพต้นแบบ ไม่ใช่ไฟล์ STL หรือไฟล์ CNC พร้อมกัดจริง'
+    ]
     return '\n'.join(pieces)
 
 # Use a visible selection to control which tab's prompt is sent; Streamlit tabs do not expose active tab to Python.
