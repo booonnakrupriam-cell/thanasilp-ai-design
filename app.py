@@ -533,6 +533,38 @@ with col_gemini:
     ''',height=80)
     st.link_button('เปิด Gemini (ลิงก์สำรอง)','https://gemini.google.com/app',use_container_width=True)
 
+# Meta AI: no verified public URL scheme for pre-filling a prompt.
+# Preserve the ChatGPT/Gemini controls and offer a copy-and-open flow.
+st.markdown('##### ส่งคำสั่งไป Meta AI')
+safe_meta_prompt=html.escape(prompt,quote=True)
+components.html(f'''
+<button id="meta_send" style="width:100%;padding:12px;border-radius:9px;border:1px solid #1760c7;background:#2256ae;color:white;font-size:15px;font-weight:800;cursor:pointer">🌐 คัดลอกคำสั่ง + เปิด Meta AI</button>
+<div id="meta_status" role="status" style="font:13px Arial;margin-top:8px;color:#344054"></div>
+<textarea id="meta_prompt" style="position:absolute;left:-9999px">{safe_meta_prompt}</textarea>
+<script>
+document.getElementById('meta_send').onclick=async()=>{{
+    const tab=window.open('https://www.meta.ai/','_blank');
+    const el=document.getElementById('meta_prompt');
+    let copied=false;
+    try{{await navigator.clipboard.writeText(el.value);copied=true}}catch(e){{}}
+    if(!copied){{
+        try{{
+            el.style.left='0px';
+            el.select();
+            el.setSelectionRange(0,el.value.length);
+            copied=document.execCommand('copy');
+            el.style.left='-9999px';
+        }}catch(e){{el.style.left='-9999px';}}
+    }}
+    document.getElementById('meta_status').innerText=copied
+        ? '✅ คัดลอกแล้ว เปิด Meta AI แล้วแตะค้างที่ช่องแชทเพื่อวางคำสั่ง'
+        : 'เปิด Meta AI แล้ว กรุณาคัดลอกข้อความจากช่องคำสั่งด้านบน';
+    if(!tab)document.getElementById('meta_status').innerText+=' • หากไม่เปิดแท็บ ให้ใช้ปุ่มสำรองด้านล่าง';
+}};
+</script>
+''',height=85)
+st.link_button('เปิด Meta AI (ลิงก์สำรอง)','https://www.meta.ai/',use_container_width=True)
+
 st.info('วิธีใช้: **ChatGPT** กดส่งคำสั่งโดยตรง (ถ้าเบราว์เซอร์รองรับ) แล้วกดส่งในแชท • **Gemini** กดคัดลอก+เปิด → Ctrl+V → กดส่ง')
 st.caption('เว็บไซต์นี้สร้างคำสั่งเท่านั้น ไม่ส่งไฟล์เข้าห้องแชทอัตโนมัติ และไม่ใช้ OpenAI API')
 
