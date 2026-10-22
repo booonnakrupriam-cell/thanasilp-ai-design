@@ -533,37 +533,70 @@ with col_gemini:
     ''',height=80)
     st.link_button('เปิด Gemini (ลิงก์สำรอง)','https://gemini.google.com/app',use_container_width=True)
 
-# Meta AI: no verified public URL scheme for pre-filling a prompt.
-# Preserve the ChatGPT/Gemini controls and offer a copy-and-open flow.
+# Meta AI clipboard button is rendered in the main page (not in an iframe).
+# This avoids the iframe clipboard-write permissions restrictions on many phones.
 st.markdown('##### ส่งคำสั่งไป Meta AI')
 safe_meta_prompt=html.escape(prompt,quote=True)
-components.html(f'''
-<button id="meta_send" style="width:100%;padding:12px;border-radius:9px;border:1px solid #1760c7;background:#2256ae;color:white;font-size:15px;font-weight:800;cursor:pointer">🌐 คัดลอกคำสั่ง + เปิด Meta AI</button>
-<div id="meta_status" role="status" style="font:13px Arial;margin-top:8px;color:#344054"></div>
-<textarea id="meta_prompt" style="position:absolute;left:-9999px">{safe_meta_prompt}</textarea>
+st.html(f'''
+<div id="thanasin-meta-copy-panel">
+  <button type="button" id="thanasin-meta-copy-button"
+    style="width:100%;padding:12px;border-radius:9px;border:1px solid #1760c7;background:#2256ae;color:#fff;font-size:15px;font-weight:800;cursor:pointer">
+    📋 คัดลอกคำสั่งสำหรับ Meta AI
+  </button>
+  <div id="thanasin-meta-copy-status" role="status" aria-live="polite"
+    style="font:13px Arial,sans-serif;margin-top:8px;color:#344054">
+    กดคัดลอกก่อน แล้วจึงกดเปิด Meta AI ด้านล่าง
+  </div>
+  <textarea id="thanasin-meta-copy-source"
+    style="position:absolute;width:1px;height:1px;left:-10000px;opacity:0"
+    aria-hidden="true" tabindex="-1">{safe_meta_prompt}</textarea>
+</div>
 <script>
-document.getElementById('meta_send').onclick=async()=>{{
-    const tab=window.open('https://www.meta.ai/','_blank');
-    const el=document.getElementById('meta_prompt');
+(() => {{
+  const root=document.getElementById('thanasin-meta-copy-panel');
+  if(!root) return;
+  const btn=root.querySelector('#thanasin-meta-copy-button');
+  const status=root.querySelector('#thanasin-meta-copy-status');
+  const source=root.querySelector('#thanasin-meta-copy-source');
+  if(!btn || !status || !source) return;
+  btn.onclick=async()=>{{
+    const txt=source.value;
     let copied=false;
-    try{{await navigator.clipboard.writeText(el.value);copied=true}}catch(e){{}}
+    try {{
+      if(navigator.clipboard && window.isSecureContext){{
+        await navigator.clipboard.writeText(txt);
+        copied=true;
+      }}
+    }} catch(err){{}}
     if(!copied){{
-        try{{
-            el.style.left='0px';
-            el.select();
-            el.setSelectionRange(0,el.value.length);
-            copied=document.execCommand('copy');
-            el.style.left='-9999px';
-        }}catch(e){{el.style.left='-9999px';}}
+      const temp=document.createElement('textarea');
+      temp.value=txt;
+      temp.setAttribute('readonly','');
+      temp.style.position='fixed';
+      temp.style.top='0';
+      temp.style.left='0';
+      temp.style.opacity='0';
+      document.body.appendChild(temp);
+      temp.focus();
+      temp.select();
+      temp.setSelectionRange(0,temp.value.length);
+      try{{copied=document.execCommand('copy')}}catch(err){{}}
+      temp.remove();
     }}
-    document.getElementById('meta_status').innerText=copied
-        ? '✅ คัดลอกแล้ว เปิด Meta AI แล้วแตะค้างที่ช่องแชทเพื่อวางคำสั่ง'
-        : 'เปิด Meta AI แล้ว กรุณาคัดลอกข้อความจากช่องคำสั่งด้านบน';
-    if(!tab)document.getElementById('meta_status').innerText+=' • หากไม่เปิดแท็บ ให้ใช้ปุ่มสำรองด้านล่าง';
-}};
+    if(copied){{
+      status.textContent='✅ คัดลอกคำสั่งสำเร็จ! กดเปิด Meta AI แล้ววางข้อความได้เลย';
+      status.style.color='#16763f';
+      btn.textContent='✅ คัดลอกคำสั่งแล้ว';
+    }} else {{
+      status.textContent='⚠️ เบราว์เซอร์ไม่อนุญาตให้คัดลอกอัตโนมัติ กรุณาคัดลอกจากช่องคำสั่งด้านบน';
+      status.style.color='#b45309';
+    }}
+  }};
+}})();
 </script>
-''',height=85)
-st.link_button('เปิด Meta AI (ลิงก์สำรอง)','https://www.meta.ai/',use_container_width=True)
+''',unsafe_allow_javascript=True)
+st.link_button('🌐 เปิด Meta AI','https://www.meta.ai/',use_container_width=True)
+st.caption('มือถือ: กดคัดลอกให้ขึ้นเครื่องหมาย ✅ ก่อน → เปิด Meta AI → แตะค้างที่ช่องแชทแล้วเลือก วาง')
 
 st.info('วิธีใช้: **ChatGPT** กดส่งคำสั่งโดยตรง (ถ้าเบราว์เซอร์รองรับ) แล้วกดส่งในแชท • **Gemini** กดคัดลอก+เปิด → Ctrl+V → กดส่ง')
 st.caption('เว็บไซต์นี้สร้างคำสั่งเท่านั้น ไม่ส่งไฟล์เข้าห้องแชทอัตโนมัติ และไม่ใช้ OpenAI API')
