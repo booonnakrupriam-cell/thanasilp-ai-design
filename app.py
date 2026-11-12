@@ -8,7 +8,7 @@ st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠
 
 # Independent Smart Re-layout entry: does not depend on the large print-studio module.
 if st.query_params.get("studio") == "smart":
-    st.title("🧩 ธนศิลป์ • จัดองค์ประกอบป้ายใหม่ ไม่บิดรูปทรง")
+    st.title("🛡️ ธนศิลป์ • เปลี่ยนขนาดไม่ตัดภาพ / ให้ AI ออกแบบใหม่ทั้งงาน")
     st.link_button("🏠 กลับเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
     try:
         from io import BytesIO
@@ -215,12 +215,12 @@ st.markdown("""
 
 # An obvious entry point independent of which Streamlit tab is active.
 st.link_button(
-    "🧩 จัดองค์ประกอบใหม่ทั้งงาน • ปรับขนาดไม่บีบวงกลม/ตัวหนังสือ",
+    "🛡️ ไม่ตัดภาพเป็นแถบ • หรือให้ AI ออกแบบใหม่ทั้งงาน",
     "https://thanasin-ai-design.streamlit.app/?studio=smart",
     use_container_width=True,
     type="primary",
 )
-st.caption("แบบใหม่: เลือกจัดบล็อกภาพจริงโดยไม่ยืด หรือสร้างคำสั่งให้ AI ออกแบบใหม่ทั้งงาน")
+st.caption("ทำไฟล์บนเว็บโดยคงภาพเดิมเป็นชิ้นเดียว หรือเลือก AI เพื่อสร้างองค์ประกอบใหม่ทั้งงานโดยต้องแนบภาพต้นฉบับ")
 st.link_button(
     "🔎 ขยายภาพ + เลือกรูปแบบปรับคม + ลากก่อน–หลัง",
     "https://thanasin-ai-design.streamlit.app/?studio=resize",
