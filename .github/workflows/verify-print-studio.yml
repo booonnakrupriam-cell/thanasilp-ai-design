@@ -40,6 +40,9 @@ jobs:
           exit 1
       - name: Browser test Thai text editor and PNG download
         run: python tests/browser_smoke.py
+      - name: Check public website deployment (informational)
+        continue-on-error: true
+        run: python tests/live_smoke.py
       - name: Display Streamlit log on failure
         if: failure()
         run: |
