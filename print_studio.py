@@ -8,6 +8,8 @@ from io import BytesIO
 from pathlib import Path
 
 import streamlit as st
+
+from interactive_sign_editor import render_interactive_editor
 from PIL import (
     Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter,
     ImageFont, ImageOps,
@@ -610,16 +612,17 @@ def _tool_memorial():
 
 
 def render_print_studio():
-    """เลือกเครื่องมือด้วยรายการที่เห็นครบทั้ง 4 โหมดบนมือถือและคอมพิวเตอร์"""
+    """แสดง 5 โหมดชัดเจนทั้งมือถือและคอมพิวเตอร์ โดยคง 4 เครื่องมือเดิมไว้"""
     st.markdown("### 🖨️ ธนศิลป์ Print Studio")
-    st.caption("เครื่องมือประมวลผลภาพเบื้องต้นบนเว็บ ไม่ต้องส่งคำสั่งไป ChatGPT สำหรับงานในแท็บนี้")
-    st.info("ไฟล์ที่อัปโหลดจะถูกประมวลผลบนเซิร์ฟเวอร์ของเว็บ กรุณาได้รับอนุญาตก่อนใช้งานภาพบุคคล และอย่าอัปโหลดข้อมูลลับ")
-    st.markdown("**👇 เลือกโหมดที่ต้องการใช้ได้จาก 4 รายการนี้**")
+    st.caption("แก้ข้อความบนภาพแบบคลิก/ลากได้จริง พร้อมเครื่องมือขยายภาพและเตรียมงานพิมพ์เดิม")
+    st.info("ภาพอัปโหลดจะผ่านเซิร์ฟเวอร์ของเว็บก่อนเปิดตัวแก้ไข กรุณาได้รับอนุญาตก่อนใช้งานภาพบุคคล")
+    st.markdown("**👇 เลือกเครื่องมือได้จาก 5 โหมดนี้**")
     mode = st.radio(
         "เลือกเครื่องมือในสตูดิโองานพิมพ์",
         [
+            "🖱️ ใหม่! แก้ข้อความบนภาพแบบคลิก / ลาก",
             "🔎 1. ขยายภาพ / DPI",
-            "✏️ 2. แก้ข้อความบนภาพ",
+            "✏️ 2. แก้ข้อความบนภาพ (แบบเดิม)",
             "✂️ 3. สติกเกอร์ไดคัท",
             "🕯️ 4. ป้ายงานศพ / ภาพอาลัย",
         ],
@@ -628,7 +631,9 @@ def render_print_studio():
         label_visibility="collapsed",
     )
     st.divider()
-    if mode.startswith("🔎"):
+    if mode.startswith("🖱️"):
+        render_interactive_editor()
+    elif mode.startswith("🔎"):
         _tool_resize()
     elif mode.startswith("✏️"):
         _tool_text()
