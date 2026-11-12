@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import json
+import hashlib
 from io import BytesIO
 from pathlib import Path
 
@@ -164,6 +165,63 @@ EDITOR = st.components.v2.component(
 )
 
 
+@st.cache_data(show_spinner=False, max_entries=12)
+def _detect_thai_text(encoded_image):
+    """Optional OCR: local Tesseract, no paid API. Results require human review."""
+    import pytesseract
+    from pytesseract import Output
+    with Image.open(BytesIO(encoded_image)) as original:
+        img = original.convert("RGB")
+        w, h = img.size
+        img.thumbnail((1800, 1800), Image.Resampling.LANCZOS)
+        ratio_x, ratio_y = w / img.width, h / img.height
+        img = ImageOps.autocontrast(img, cutoff=1)
+        words = pytesseract.image_to_data(
+            img, lang="tha+eng", config="--oem 1 --psm 11",
+            output_type=Output.DICT, timeout=22,
+        )
+        lines = {}
+        for i, word in enumerate(words["text"]):
+            text = word.strip()
+            try:
+                confidence = float(words["conf"][i])
+            except (ValueError, TypeError):
+                continue
+            if confidence < 20 or not text:
+                continue
+            key = (
+                words["block_num"][i],
+                words["par_num"][i],
+                words["line_num"][i],
+            )
+            r = lines.setdefault(key, {
+                "words": [], "l": float("inf"), "t": float("inf"),
+                "r": 0, "b": 0, "conf": [],
+            })
+            x = words["left"][i]
+            y = words["top"][i]
+            r["words"].append(text)
+            r["l"] = min(r["l"], x)
+            r["t"] = min(r["t"], y)
+            r["r"] = max(r["r"], x + words["width"][i])
+            r["b"] = max(r["b"], y + words["height"][i])
+            r["conf"].append(confidence)
+        result = []
+        for r in lines.values():
+            txt = " ".join(r["words"]).strip()
+            if not txt or r["l"] == float("inf"):
+                continue
+            result.append({
+                "text": txt,
+                "x": round(r["l"] * ratio_x, 1),
+                "y": round(r["t"] * ratio_y, 1),
+                "w": round((r["r"] - r["l"]) * ratio_x, 1),
+                "h": round((r["b"] - r["t"]) * ratio_y, 1),
+                "confidence": round(sum(r["conf"]) / len(r["conf"])),
+            })
+        return sorted(result, key=lambda r: (r["y"], r["x"]))[:100]
+
+
 def render_interactive_editor():
     """New editing mode; all original print-studio modes remain available."""
     st.markdown("#### 🖱️ แก้ข้อความบนภาพแบบคลิก / ลาก — เวอร์ชันทดลอง")
@@ -231,8 +289,36 @@ def render_interactive_editor():
         )
     else:
         st.caption(f"ขนาดภาพสำหรับแก้ไข {im.width:,} × {im.height:,} px")
-    # Passing the image as data rather than raw HTML avoids embedding any user-controlled markup.
-    EDITOR(data={"image": src}, key="studio_interactive_editor_v1")
+    st.markdown("**🔎 ค้นหาข้อความภาษาไทยอัตโนมัติ (OCR ทดลอง)**")
+    st.caption(
+        "เหมาะกับข้อความไทยที่มองเห็นชัดบนพื้นหลังเรียบ • ตัวหนังสือลายไทย/3D อาจอ่านผิด "
+        "ตรวจทุกคำก่อนแก้ไข และบันทึกโปรเจกต์ .json ก่อนกดสแกนใหม่"
+    )
+    fingerprint = hashlib.sha256(stream.getvalue()).hexdigest()
+    if st.button("🔎 สแกนหาข้อความในภาพ", key="studio_ocr_scan", use_container_width=True):
+        try:
+            with st.spinner("กำลังตรวจหาข้อความไทยในภาพ..."):
+                boxes = _detect_thai_text(stream.getvalue())
+            st.session_state["studio_ocr_result"] = {"hash": fingerprint, "boxes": boxes}
+        except Exception as exc:
+            st.session_state["studio_ocr_result"] = None
+            st.warning(
+                "ไม่สามารถตรวจข้อความด้วย OCR ได้ "
+                "(อาจไม่มีโมเดลภาษาไทยหรือภาพซับซ้อนเกินกำลังเครื่อง): "
+                + str(exc)[:140]
+            )
+    cached = st.session_state.get("studio_ocr_result")
+    boxes = cached["boxes"] if cached and cached["hash"] == fingerprint else []
+    if cached and cached["hash"] == fingerprint:
+        if boxes:
+            st.success(
+                f"พบกรอบข้อความ {len(boxes)} บรรทัด — ในตัวแก้ภาพให้เลือก "
+                "🔎 คลิกข้อความที่ตรวจพบ แล้วแตะกรอบสีฟ้าเพื่อสร้างชั้นข้อความที่แก้ได้"
+            )
+        else:
+            st.info("ไม่พบข้อความที่อ่านได้ชัดเจน สามารถใช้เครื่องมือลากกรอบและพิมพ์เองได้")
+    # User-supplied content enters only the JSON data binding, never HTML or CSS.
+    EDITOR(data={"image": src, "ocr": boxes}, key="studio_interactive_editor_v1")
     st.warning("ก่อนเปลี่ยนโหมดหรือรีเฟรชหน้าเว็บ กรุณากด 💾 บันทึกไฟล์แก้ไข .json เพื่อเก็บชั้นข้อความที่แก้ไว้")
     st.caption(
         "เวอร์ชันนี้แก้ข้อความใหม่เป็นชั้นภาพจริงและส่งออก PNG ได้ "
