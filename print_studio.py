@@ -108,6 +108,75 @@ def _font(size, font_upload=None, font_choice=None):
         return None
 
 
+@st.cache_data(show_spinner=False, max_entries=48)
+def _memorial_font_preview(font_path, uploaded_bytes=None):
+    """สร้างตัวอย่างฟอนต์จากไฟล์จริง ไม่ใช่รูปตัวอย่างที่ใช้ฟอนต์เดียวกันทั้งหมด"""
+    canvas = Image.new("RGB", (760, 205), "#FFFBF5")
+    d = ImageDraw.Draw(canvas)
+    d.rounded_rectangle((4, 4, 755, 200), radius=16, outline="#D6C3A0", width=3)
+    samples = [
+        ("ด้วยความอาลัย", 18, 57, "#5A3C20"),
+        ("คุณแม่ตัวอย่าง", 88, 50, "#302F39"),
+        ("สิริอายุ ๘๕ ปี", 152, 32, "#6A5663"),
+    ]
+    try:
+        for sample, y, target_size, ink in samples:
+            size = target_size
+            while size >= 16:
+                font = (ImageFont.truetype(BytesIO(uploaded_bytes), size)
+                        if uploaded_bytes else ImageFont.truetype(font_path, size))
+                bounds = d.textbbox((0, 0), sample, font=font)
+                if bounds[2] - bounds[0] <= 692:
+                    break
+                size -= 3
+            x = (canvas.width - (bounds[2] - bounds[0])) // 2 - bounds[0]
+            d.text((x, y - bounds[1]), sample, font=font, fill=ink)
+    except (OSError, ValueError, UnicodeError):
+        return None
+    out = BytesIO()
+    canvas.save(out, format="PNG")
+    return out.getvalue()
+
+
+def _memorial_font_gallery(font_map):
+    """แสดงฟอนต์ไทยหลายตระกูลพร้อมปุ่มเลือก และเก็บ selectbox เดิมไว้"""
+    if not font_map:
+        return
+    st.markdown("**ตัวอย่างฟอนต์สำหรับป้ายอาลัย — ดูลักษณะตัวจริงแล้วกดเลือกได้เลย**")
+    preferred = ("Garuda", "Kinnari", "Loma", "Norasi", "Purisa",
+                 "Sawasdee", "Umpush", "Waree", "Sarabun", "NotoSansThai")
+    chosen = []
+    for family in preferred:
+        choices = [name for name in font_map if name.lower().startswith(family.lower())]
+        if choices:
+            non_bold = [n for n in choices if not any(w in n.lower() for w in ("bold", "italic", "oblique"))]
+            chosen.append((non_bold or choices)[0])
+    if not chosen:
+        chosen = list(font_map)[:8]
+    # จำกัดความสูงแกลเลอรี แต่ยังมีรายชื่อทุกฟอนต์ในช่องเลือกด้านล่าง
+    chosen = list(dict.fromkeys(chosen))[:10]
+    for row_start in range(0, len(chosen), 2):
+        cols = st.columns(2)
+        for i, name in enumerate(chosen[row_start:row_start + 2]):
+            with cols[i]:
+                with st.container(border=True):
+                    st.caption(name)
+                    preview = _memorial_font_preview(font_map[name])
+                    if preview:
+                        st.image(preview, use_container_width=True)
+                    current = st.session_state.get("studio_memorial_font_choice", next(iter(font_map)))
+                    if st.button("✓ ฟอนต์ที่เลือก" if current == name else "เลือกฟอนต์นี้",
+                                 key=f"studio_memorial_pick_{row_start+i}",
+                                 disabled=(current == name), use_container_width=True,
+                                 on_click=_set_memorial_font_choice, args=(name,)):
+                        pass
+    st.caption("ยังมีฟอนต์อื่นให้เลือกจากรายการด้านล่าง และสามารถอัปโหลดฟอนต์ของคุณเองได้")
+
+
+def _set_memorial_font_choice(font_name):
+    st.session_state["studio_memorial_font_choice"] = font_name
+
+
 def _draw_smooth_font_outline(canvas, content, xy, font, fill, stroke, stroke_fill, shadow):
     """วาดขอบตามเส้นฟอนต์จริง และลดรอยหยักด้วย supersampling เฉพาะตัวอักษร"""
     if not content or font is None:
@@ -525,8 +594,14 @@ def _tool_memorial():
     st.caption("เลือกแบบ ใส่ภาพและชื่อ คำนวณอายุ และแปลงตัวเลขไทย โดยไม่ต้องใช้ AI สร้างตัวสะกด")
     photo_upload = st.file_uploader("อัปโหลดภาพบุคคล (ถ้ามี)", type=["png", "jpg", "jpeg"], key="studio_memorial_upload")
     memorial_fonts = _available_thai_fonts()
+    _memorial_font_gallery(memorial_fonts)
     font_choice = st.selectbox("เลือกฟอนต์สำหรับป้ายอาลัย", list(memorial_fonts) or ["อัปโหลดฟอนต์ด้านล่าง"], key="studio_memorial_font_choice")
     font_upload = st.file_uploader("ฟอนต์ภาษาไทย TTF/OTF เพิ่มเติม (ไม่บังคับ)", type=["ttf", "otf"], key="studio_memorial_font")
+    if font_upload is not None:
+        st.caption("ฟอนต์ที่อัปโหลดจะถูกใช้แทนฟอนต์ที่เลือกในแกลเลอรี")
+        custom_preview = _memorial_font_preview("", font_upload.getvalue())
+        if custom_preview:
+            st.image(custom_preview, caption="ตัวอย่างฟอนต์ที่อัปโหลด", use_container_width=True)
     mem_c1, mem_c2 = st.columns(2)
     with mem_c1:
         text_stroke = st.slider("ความหนาเส้นขอบตัวหนังสือ (px)", 0, 12, 1, key="studio_memorial_stroke")
