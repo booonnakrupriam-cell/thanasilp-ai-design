@@ -348,14 +348,30 @@ def _resize_preset_preview(image, preset):
 
 
 def _tool_resize():
-    st.markdown("#### 1. อัพสเกลภาพ / ปรับเส้นคมสำหรับพิมพ์ + ลากก่อน–หลัง")
-    st.caption("อัปโหลดรูป → เลือกแบบปรับคม → ลากเส้น ↔ ดูก่อน–หลังจริง → สร้างไฟล์พร้อมพิมพ์ ไม่ต้องออกจากโหมดนี้")
+    st.markdown("#### 1. เปลี่ยนขนาด / อัพสเกล / จัดองค์ประกอบงานพิมพ์")
+    st.caption("เลือกได้ทั้งจัดเลย์เอาต์ใหม่จริงโดยไม่บีบวงกลม/คน/ฟอนต์ หรือขยายภาพและปรับคมแบบเดิม")
     up = st.file_uploader("อัปโหลดภาพสำหรับขยาย", type=["jpg", "jpeg", "png", "tif", "tiff"],
                           key="studio_resize_upload")
 
     image = _open_image(up) if up is not None else None
     if image is not None:
         st.caption(f"ภาพต้นฉบับ {image.width:,} × {image.height:,} พิกเซล")
+
+    st.markdown("#### 🎯 เลือกประเภทการปรับขนาด")
+    resize_workflow = st.radio(
+        "รูปแบบการทำงาน",
+        [
+            "🧩 จัดองค์ประกอบใหม่ทั้งงาน (แนะนำเมื่อเปลี่ยนสัดส่วนป้าย)",
+            "🖨️ ขยายภาพ / ปรับคม / คงสัดส่วน / ครอป (แบบเดิม)",
+        ],
+        key="studio_resize_workflow_v5",
+        horizontal=False,
+    )
+    if resize_workflow.startswith("🧩"):
+        from smart_relayout import render_smart_relayout
+        render_smart_relayout(image)
+        return
+
     if "studio_resize_preset_v3" not in st.session_state:
         _set_resize_preset("🪧 ป้ายตัวหนังสือคม")
     elif "studio_resize_preset_dropdown_v4" not in st.session_state:
