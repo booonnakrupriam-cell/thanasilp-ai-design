@@ -6,6 +6,56 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
+# Unified homepage entry. Existing ?studio=smart and ?studio=resize links remain valid.
+if st.query_params.get("studio") == "workshop":
+    st.title("🖼️ ธนศิลป์ • ปรับขนาด / อัพสเกล / ให้ AI ออกแบบใหม่")
+    st.link_button("🏠 กลับเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
+    unified_mode = st.radio(
+        "เลือกการทำงานในหัวข้อเดียว",
+        [
+            "🛡️ ปรับขนาดไม่ตัดภาพ / ให้ AI จัดองค์ประกอบใหม่",
+            "🔎 อัพสเกล ปรับคม และลากเปรียบเทียบก่อน–หลัง",
+        ],
+        key="unified_design_mode_v1",
+        horizontal=False,
+    )
+    if unified_mode.startswith("🛡️"):
+        try:
+            from io import BytesIO
+            from PIL import Image, ImageOps
+            from smart_relayout import render_smart_relayout
+            unified_upload = st.file_uploader(
+                "อัปโหลดภาพป้ายต้นฉบับ PNG / JPG / TIFF",
+                type=["png", "jpg", "jpeg", "tif", "tiff"],
+                key="unified_smart_upload",
+            )
+            unified_image = None
+            if unified_upload is not None:
+                if unified_upload.name.lower().startswith(("thanasilp_no_cut", "thanasilp_smart_relayout")):
+                    st.warning("ควรอัปโหลดภาพต้นฉบับก่อนเติมขอบหรือตัดเป็นแถบ เพื่อไม่ให้ขอบและรอยตัดเดิมติดไปในงานใหม่")
+                if unified_upload.size > 30 * 1024 * 1024:
+                    st.error("ไฟล์เกิน 30 MB กรุณาลดขนาดก่อน")
+                else:
+                    try:
+                        with Image.open(BytesIO(unified_upload.getvalue())) as im:
+                            if im.width * im.height > 35_000_000:
+                                st.error("ภาพใหญ่เกิน 35 ล้านพิกเซล กรุณาลดขนาดก่อน")
+                            else:
+                                unified_image = ImageOps.exif_transpose(im).convert("RGBA")
+                    except (OSError, ValueError):
+                        st.error("เปิดภาพไม่ได้ กรุณาใช้ PNG, JPG หรือ TIFF ที่สมบูรณ์")
+            render_smart_relayout(unified_image)
+        except Exception as exc:
+            st.error("เปิดโหมดจัดองค์ประกอบใหม่ไม่ได้: " + type(exc).__name__)
+    else:
+        try:
+            from print_studio import _tool_resize
+            _tool_resize()
+        except Exception as exc:
+            st.error("เปิดโหมดอัพสเกลไม่ได้: " + type(exc).__name__)
+            st.caption("สามารถเปิดโหมดอัพสเกลเดิมแยกได้จาก https://thanasin-ai-design.streamlit.app/?studio=resize")
+    st.stop()
+
 # Independent Smart Re-layout entry: does not depend on the large print-studio module.
 if st.query_params.get("studio") == "smart":
     st.title("🛡️ ธนศิลป์ • เปลี่ยนขนาดไม่ตัดภาพ / ให้ AI ออกแบบใหม่ทั้งงาน")
@@ -220,21 +270,14 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# An obvious entry point independent of which Streamlit tab is active.
+# One unified homepage entry for both existing image workflows.
 st.link_button(
-    "🛡️ ไม่ตัดภาพเป็นแถบ • หรือให้ AI ออกแบบใหม่ทั้งงาน",
-    "https://thanasin-ai-design.streamlit.app/?studio=smart",
+    "🖼️ ปรับขนาดไม่ตัดภาพ / อัพสเกลปรับคม / AI ออกแบบใหม่",
+    "https://thanasin-ai-design.streamlit.app/?studio=workshop",
     use_container_width=True,
     type="primary",
 )
-st.caption("ทำไฟล์บนเว็บโดยคงภาพเดิมเป็นชิ้นเดียว หรือเลือก AI เพื่อสร้างองค์ประกอบใหม่ทั้งงานโดยต้องแนบภาพต้นฉบับ")
-st.link_button(
-    "🔎 ขยายภาพ + เลือกรูปแบบปรับคม + ลากก่อน–หลัง",
-    "https://thanasin-ai-design.streamlit.app/?studio=resize",
-    use_container_width=True,
-    type="primary",
-)
-st.caption("กดเปิดเครื่องมือขยายภาพ / DPI พร้อมเลือกรูปแบบปรับคม และลากเส้นเปรียบเทียบได้ในหน้าเดียว")
+st.caption("เข้าเครื่องมือเดียว แล้วเลือกได้ว่าจะจัดภาพไม่เสียรูปทรง ให้ AI ออกแบบใหม่ หรือขยายภาพปรับคมพร้อมลากก่อน–หลัง")
 
 def section_title(title):
     st.markdown(f'<div class="form-section-title">{html.escape(title)}</div>', unsafe_allow_html=True)
