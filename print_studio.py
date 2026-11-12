@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import glob
+import hashlib
 import math
 from datetime import date
 from io import BytesIO
@@ -186,10 +187,66 @@ def _preview(img, label=None):
     st.image(_small_preview(img), caption=label, use_container_width=True)
 
 
+def _resize_print_image(image, dest_size, framing, resample):
+    """Keep font and ornament shapes proportional unless user explicitly opts to stretch."""
+    if framing == "คงสัดส่วนภาพเดิม (ไม่ยืดตัวหนังสือ)":
+        fitted = ImageOps.contain(image, dest_size, method=resample)
+        background = ((255, 255, 255, 0) if image.getchannel("A").getextrema()[0] < 255
+                      else (255, 255, 255, 255))
+        canvas = Image.new("RGBA", dest_size, background)
+        canvas.alpha_composite(fitted, ((dest_size[0] - fitted.width) // 2,
+                                        (dest_size[1] - fitted.height) // 2))
+        return canvas
+    if framing == "เต็มกรอบแบบครอป (ไม่บิดอักษร)":
+        return ImageOps.fit(image, dest_size, method=resample, centering=(.5, .5))
+    return image.resize(dest_size, resample)
+
+
+def _apply_print_edge_mode(image, mode, strength, curve_smooth):
+    """Enhance existing raster contours, preserving the original alpha and color balance.
+
+    This does not reconstruct true glyph outlines or genuine missing image details.
+    """
+    if mode == "ไม่ปรับความคม" or strength <= 0:
+        return image
+    original_alpha = image.getchannel("A")
+    rgb = image.convert("RGB")
+    if mode == "🔤 ตัวหนังสือและลายเส้นคม":
+        radius, percent, threshold = 0.95, int(100 + strength * 88), 2
+    elif mode == "🌀 ส่วนโค้งฟอนต์เนียน คมขอบ":
+        # Very light antialias-like smoothing BEFORE edge emphasis.
+        if curve_smooth:
+            softened = rgb.filter(ImageFilter.GaussianBlur(radius=.3 + .14 * curve_smooth))
+            rgb = Image.blend(rgb, softened, min(.38, .09 * curve_smooth))
+        radius, percent, threshold = .8, int(105 + strength * 76), 2
+    else:
+        radius, percent, threshold = 1.25, int(65 + strength * 65), 3
+    rgb = rgb.filter(ImageFilter.UnsharpMask(radius=radius,
+                                             percent=min(330, percent),
+                                             threshold=threshold))
+    result = rgb.convert("RGBA")
+    result.putalpha(original_alpha)
+    return result
+
+
+def _live_resize_comparison(image, target_size, framing, mode, strength, smooth):
+    """Apply selected image enhancement to a bounded preview from the uploaded image."""
+    tw, th = target_size
+    ratio = min(1, 1700 / max(1, tw), 1050 / max(1, th),
+                math.sqrt(1_550_000 / max(1, tw * th)))
+    size = (max(1, int(tw * ratio)), max(1, int(th * ratio)))
+    before = _resize_print_image(image, size, framing, Image.Resampling.BILINEAR)
+    after = _resize_print_image(image, size, framing, Image.Resampling.LANCZOS)
+    after = _apply_print_edge_mode(after, mode, strength, smooth)
+    return prepare_quality_previews(before, after)
+
+
 def _tool_resize():
-    st.markdown("#### 1. ขยายภาพ / กำหนดขนาดจริงและ DPI")
-    st.caption("ขยายภาพและปรับความคมด้วยการประมวลผลภาพพื้นฐาน ไม่ใช่ AI สร้างรายละเอียดที่หายไป")
-    up = st.file_uploader("อัปโหลดภาพสำหรับขยาย", type=["jpg", "jpeg", "png", "tif", "tiff"], key="studio_resize_upload")
+    st.markdown("#### 1. ขยายภาพ / DPI + ลากเทียบความคมชัดก่อน–หลัง")
+    st.caption("อัปโหลดภาพแล้วเห็นเส้นลากก่อน–หลังทันทีในหน้านี้ พร้อมโหมดปรับคมตัวอักษร เส้นขอบ และส่วนโค้ง")
+    up = st.file_uploader("อัปโหลดภาพสำหรับขยาย", type=["jpg", "jpeg", "png", "tif", "tiff"],
+                          key="studio_resize_upload")
+
     c1, c2, c3 = st.columns(3)
     with c1:
         width_cm = st.number_input("กว้าง (ซม.)", 1.0, 600.0, 100.0, 1.0, key="studio_resize_width")
@@ -197,41 +254,90 @@ def _tool_resize():
         height_cm = st.number_input("สูง (ซม.)", 1.0, 600.0, 60.0, 1.0, key="studio_resize_height")
     with c3:
         dpi = st.number_input("DPI ที่ต้องการ", 30, 600, 150, 10, key="studio_resize_dpi")
+
+    st.markdown("**🔤 โหมดปรับเส้นคม / ตัวหนังสือ / ส่วนโค้ง**")
+    p1, p2 = st.columns(2)
+    with p1:
+        mode = st.selectbox("เลือกรูปแบบเพิ่มความคม", [
+            "🔤 ตัวหนังสือและลายเส้นคม",
+            "🌀 ส่วนโค้งฟอนต์เนียน คมขอบ",
+            "📷 ความคมชัดธรรมชาติ",
+            "ไม่ปรับความคม",
+        ], key="studio_resize_edge_mode_v2")
+        sharpen = st.slider("เพิ่มความคมชัด", 0.0, 2.0, 0.6, 0.1,
+                            key="studio_resize_edge_strength_v2")
+    with p2:
+        framing = st.selectbox("รักษาสัดส่วนและรูปร่างฟอนต์", [
+            "คงสัดส่วนภาพเดิม (ไม่ยืดตัวหนังสือ)",
+            "เต็มกรอบแบบครอป (ไม่บิดอักษร)",
+            "ยืดให้เต็มกรอบ (อาจทำให้ตัวหนังสือเบี้ยว)",
+        ], key="studio_resize_framing_v2")
+        smooth = st.slider("ปรับความเนียนของส่วนโค้ง", 0, 3, 1, 1,
+                           key="studio_resize_curve_v2",
+                           disabled=mode != "🌀 ส่วนโค้งฟอนต์เนียน คมขอบ")
+
     col_a, col_b = st.columns(2)
     with col_a:
-        sharpen = st.slider("เพิ่มความคมชัด", 0.0, 2.0, 0.3, 0.1, key="studio_resize_sharp")
-    with col_b:
         fmt = st.selectbox("รูปแบบไฟล์", ["PNG", "TIFF"], key="studio_resize_format")
-    cmyk = st.checkbox("ส่งออก TIFF แบบ CMYK (ไม่มี ICC โปรไฟล์เฉพาะเครื่องพิมพ์)",
-                       value=False, disabled=(fmt != "TIFF"), key="studio_resize_cmyk")
+    with col_b:
+        cmyk = st.checkbox("ส่งออก TIFF แบบ CMYK (ไม่มี ICC โปรไฟล์เฉพาะเครื่องพิมพ์)",
+                           value=False, disabled=(fmt != "TIFF"), key="studio_resize_cmyk")
+
     wpx, hpx, effective_dpi = _target_pixels(width_cm, height_cm, dpi)
     st.caption(f"ขนาดส่งออก {wpx:,} × {hpx:,} พิกเซล • DPI ใช้ได้จริงประมาณ {effective_dpi:g}")
     if effective_dpi < dpi:
-        st.warning("ภาพขนาดนี้ใหญ่เกินกำลังประมวลผลของเว็บ จึงลดจำนวนพิกเซลและ DPI ลงเพื่อป้องกันเว็บค้าง")
-    if st.button("🖨️ สร้างไฟล์ขยายภาพ", use_container_width=True, key="studio_resize_generate"):
-        image = _open_image(up)
-        if image is not None:
-            with st.spinner("กำลังสร้างไฟล์..."):
-                out = image.resize((wpx, hpx), Image.Resampling.LANCZOS)
-                if sharpen:
-                    out = ImageEnhance.Sharpness(out).enhance(1 + sharpen)
+        st.warning("ขนาดงานเกินกำลังประมวลผลของเว็บ ระบบลดจำนวนพิกเซล/DPI เพื่อป้องกันเว็บค้าง")
+    st.caption("ฟอนต์ที่เป็นภาพพิกเซลสามารถปรับขอบให้ดูเรียบขึ้นได้ แต่ไม่ได้กลายเป็นเวกเตอร์หรือแก้คำในภาพด้วยฟอนต์จริง")
+
+    image = _open_image(up) if up is not None else None
+    st.markdown("#### 🔍 พรีวิวก่อน–หลังแบบลากเส้นจริง")
+    if image is not None:
+        st.caption("👇 **ลากปุ่ม ↔ ที่เส้นขาวกลางภาพ** เพื่อเทียบภาพต้นฉบับกับโหมดปรับคมที่เลือก ปรับตัวเลือกด้านบนแล้วดูผลใหม่ได้ทันที")
+        with st.spinner("กำลังประมวลผลภาพก่อน–หลังขนาดพรีวิว..."):
+            before_preview, after_preview = _live_resize_comparison(
+                image, (wpx, hpx), framing, mode, sharpen, smooth)
+        render_quality_preview(
+            before_preview, after_preview,
+            title="ก่อน ↔ หลัง • ปรับเส้นคมและส่วนโค้งตัวหนังสือ",
+            before_label="ก่อน • ภาพต้นฉบับที่ขยายแบบธรรมดา",
+            after_label="หลัง • ปรับความคมตามโหมดที่เลือก",
+        )
+    else:
+        st.info("อัปโหลดภาพด้านบนเพื่อเปรียบเทียบไฟล์ของคุณเอง หรือทดลองลากเส้นกลางภาพตัวอย่างด้านล่าง")
+        demo_before, demo_after = make_quality_demo_previews()
+        render_quality_preview(demo_before, demo_after, title="ภาพสาธิต • ลาก ↔ ที่เส้นสีขาว",
+                               before_label="ก่อน • ภาพสาธิต", after_label="หลัง • ภาพสาธิต")
+
+    fingerprint = (hashlib.sha256(up.getvalue()).hexdigest() if up is not None else "")
+    settings = (fingerprint, wpx, hpx, effective_dpi, framing, mode, sharpen,
+                smooth, fmt, cmyk)
+    if st.button("🖨️ สร้างไฟล์ขยายภาพและปรับเส้นคม", use_container_width=True,
+                 key="studio_resize_generate"):
+        if image is None:
+            st.error("กรุณาอัปโหลดภาพก่อนสร้างไฟล์")
+        else:
+            with st.spinner("กำลังขยายภาพและปรับขอบตัวอักษรสำหรับดาวน์โหลด..."):
+                out = _resize_print_image(
+                    image, (wpx, hpx), framing, Image.Resampling.LANCZOS)
+                out = _apply_print_edge_mode(out, mode, sharpen, smooth)
                 binary = _image_bytes(out, fmt, effective_dpi, cmyk)
-                st.session_state["studio_resize_result"] = (binary, fmt, wpx, hpx)
-                st.session_state["studio_resize_compare"] = prepare_quality_previews(image, out)
-    result = st.session_state.get("studio_resize_result")
-    if result:
-        binary, format_name, ww, hh = result
-        st.success(f"ไฟล์ล่าสุด: {ww:,} × {hh:,} พิกเซล")
-        if st.session_state.get("studio_resize_compare"):
-            before_preview, after_preview = st.session_state["studio_resize_compare"]
-            render_quality_preview(before_preview, after_preview,
-                                   title="ก่อน–หลังขยายภาพ • ลากเส้นและซูมได้ถึง 1200%",
-                                   before_label="ก่อน • ภาพต้นฉบับ",
-                                   after_label="หลัง • ภาพที่ขยาย / ปรับคมชัด")
+                st.session_state["studio_resize_result_v2"] = {
+                    "data": binary, "format": fmt, "width": wpx, "height": hpx,
+                    "settings": settings,
+                }
+                del out
+    result = st.session_state.get("studio_resize_result_v2")
+    if result and result.get("settings") == settings:
+        st.success(f"สร้างไฟล์แล้ว: {result['width']:,} × {result['height']:,} พิกเซล")
         _download("⬇️ ดาวน์โหลดไฟล์สำหรับงานพิมพ์",
-                  binary, "thanasilp_resized." + ("tif" if format_name == "TIFF" else "png"),
-                  "image/tiff" if format_name == "TIFF" else "image/png")
-    st.caption("หมายเหตุ: การเพิ่ม DPI/พิกเซลไม่ได้ทำให้ภาพต้นฉบับที่เบลอมีรายละเอียดจริงเพิ่มขึ้น และงาน CMYK ควรตรวจสีด้วยโปรไฟล์ ICC ของร้านพิมพ์")
+                  result["data"],
+                  "thanasilp_resized." + ("tif" if result["format"] == "TIFF" else "png"),
+                  "image/tiff" if result["format"] == "TIFF" else "image/png")
+    elif result:
+        st.caption("มีการเปลี่ยนภาพหรือค่าปรับแต่ง กรุณากดสร้างไฟล์อีกครั้งเพื่อให้ตรงกับพรีวิวล่าสุด")
+
+    st.caption("พรีวิวเป็นการประมวลผลจริงบนภาพย่อ เพื่อให้ลากได้ลื่นไหล ไม่ใช่การซูมไฟล์เต็มความละเอียด • DPI และขนาดพิมพ์จริงใช้ค่าตามไฟล์ที่ดาวน์โหลด")
+    st.caption("การขยายภาพไม่สามารถสร้างรายละเอียดที่หายไปจริงด้วย AI และการส่งออก CMYK ควรตรวจโปรไฟล์ ICC กับโรงพิมพ์")
 
 
 def _tool_text():
