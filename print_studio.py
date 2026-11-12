@@ -286,9 +286,14 @@ def _set_resize_size_preset(label):
     st.session_state["studio_resize_height"] = height
 
 
+def _apply_resize_dropdown_choice():
+    _set_resize_preset(st.session_state["studio_resize_preset_dropdown_v4"])
+
+
 def _set_resize_preset(name):
     mode, strength, smooth, _ = RESIZE_PRESETS[name]
     st.session_state["studio_resize_preset_v3"] = name
+    st.session_state["studio_resize_preset_dropdown_v4"] = name
     st.session_state["studio_resize_edge_mode_v2"] = mode
     st.session_state["studio_resize_edge_strength_v2"] = strength
     st.session_state["studio_resize_curve_v2"] = smooth
@@ -298,47 +303,51 @@ def _resize_preset_preview(image, preset):
     """Small real preview, not an unrelated decorative illustration."""
     mode, strength, smooth, _ = RESIZE_PRESETS[preset]
     thumb = image.copy()
-    thumb.thumbnail((440, 205), Image.Resampling.LANCZOS)
-    if thumb.mode != "RGBA":
-        thumb = thumb.convert("RGBA")
-    return _apply_print_edge_mode(thumb, mode, strength, smooth)
-
-
-def _tool_resize():
-    st.markdown("#### 1. ขยายภาพ / DPI + ลากเทียบความคมชัดก่อน–หลัง")
-    st.caption("อัปโหลดภาพแล้วเห็นเส้นลากก่อน–หลังทันทีในหน้านี้ พร้อมโหมดปรับคมตัวอักษร เส้นขอบ และส่วนโค้ง")
+    thumb.thdef _tool_resize():
+    st.markdown("#### 1. อัพสเกลภาพ / ปรับเส้นคมสำหรับพิมพ์ + ลากก่อน–หลัง")
+    st.caption("อัปโหลดรูป → เลือกแบบปรับคม → ลากเส้น ↔ ดูก่อน–หลังจริง → สร้างไฟล์พร้อมพิมพ์ ไม่ต้องออกจากโหมดนี้")
     up = st.file_uploader("อัปโหลดภาพสำหรับขยาย", type=["jpg", "jpeg", "png", "tif", "tiff"],
                           key="studio_resize_upload")
 
     image = _open_image(up) if up is not None else None
-    st.markdown("#### 🎨 เลือกรูปแบบเพิ่มความคมจากตัวอย่าง")
-    st.caption("เลือกรูปแบบที่ต้องการด้วยปุ่มใต้ภาพ โปรแกรมจะตั้งโหมด ความคม และส่วนโค้งให้ทันที และยังปรับละเอียดเองได้ด้านล่าง")
+    if image is not None:
+        st.caption(f"ภาพต้นฉบับ {image.width:,} × {image.height:,} พิกเซล")
     if "studio_resize_preset_v3" not in st.session_state:
         _set_resize_preset("🪧 ป้ายตัวหนังสือคม")
-    if image is not None:
-        preset_src = image.copy()
-        preset_src.thumbnail((520, 260), Image.Resampling.LANCZOS)
-    else:
-        _, demo_jpg = make_quality_demo_previews()
-        preset_src = Image.open(BytesIO(demo_jpg)).convert("RGBA")
-        preset_src.thumbnail((520, 260), Image.Resampling.LANCZOS)
-    all_presets = list(RESIZE_PRESETS)
-    for start_index in range(0, len(all_presets), 2):
-        preset_cols = st.columns(2)
-        for j, preset_name in enumerate(all_presets[start_index:start_index+2]):
-            with preset_cols[j]:
-                with st.container(border=True):
-                    st.markdown("**" + preset_name + "**")
-                    st.image(_resize_preset_preview(preset_src, preset_name),
-                             use_container_width=True)
-                    st.caption(RESIZE_PRESETS[preset_name][3])
-                    active = st.session_state.get("studio_resize_preset_v3") == preset_name
-                    st.button(
-                        "✅ เลือกอยู่" if active else "เลือกแบบนี้",
-                        key="studio_resize_choose_preset_" + str(start_index + j),
-                        disabled=active, use_container_width=True,
-                        on_click=_set_resize_preset, args=(preset_name,))
-    st.caption("รูปตัวอย่างนี้ใช้ภาพที่อัปโหลด หรือใช้ภาพสาธิตถ้ายังไม่อัปโหลด")
+    st.markdown("**🎨 เลือกรูปแบบเพิ่มความคม**")
+    st.selectbox(
+        "รูปแบบปรับคมสำเร็จรูป (เลือกแล้วอัปเดตตัวเลื่อนอัตโนมัติ)",
+        options=list(RESIZE_PRESETS),
+        key="studio_resize_preset_dropdown_v4",
+        on_change=_apply_resize_dropdown_choice,
+    )
+    with st.expander("🖼️ ดูภาพตัวอย่างปรับคม 6 แบบ แล้วกดเลือกได้", expanded=False):
+        st.markdown("#### 🎨 เลือกรูปแบบเพิ่มความคมจากตัวอย่าง")
+        st.caption("เลือกรูปแบบที่ต้องการด้วยปุ่มใต้ภาพ โปรแกรมจะตั้งโหมด ความคม และส่วนโค้งให้ทันที และยังปรับละเอียดเองได้ด้านล่าง")
+        if image is not None:
+            preset_src = image.copy()
+            preset_src.thumbnail((520, 260), Image.Resampling.LANCZOS)
+        else:
+            _, demo_jpg = make_quality_demo_previews()
+            preset_src = Image.open(BytesIO(demo_jpg)).convert("RGBA")
+            preset_src.thumbnail((520, 260), Image.Resampling.LANCZOS)
+        all_presets = list(RESIZE_PRESETS)
+        for start_index in range(0, len(all_presets), 2):
+            preset_cols = st.columns(2)
+            for j, preset_name in enumerate(all_presets[start_index:start_index+2]):
+                with preset_cols[j]:
+                    with st.container(border=True):
+                        st.markdown("**" + preset_name + "**")
+                        st.image(_resize_preset_preview(preset_src, preset_name),
+                                 use_container_width=True)
+                        st.caption(RESIZE_PRESETS[preset_name][3])
+                        active = st.session_state.get("studio_resize_preset_v3") == preset_name
+                        st.button(
+                            "✅ เลือกอยู่" if active else "เลือกแบบนี้",
+                            key="studio_resize_choose_preset_" + str(start_index + j),
+                            disabled=active, use_container_width=True,
+                            on_click=_set_resize_preset, args=(preset_name,))
+        st.caption("รูปตัวอย่างนี้ใช้ภาพที่อัปโหลด หรือใช้ภาพสาธิตถ้ายังไม่อัปโหลด")
 
     with st.expander("📐 เลือกขนาดป้ายยอดนิยม (กดเลือกได้) — หรือกรอกขนาดเอง", expanded=False):
         size_cols = st.columns(3)
@@ -392,7 +401,7 @@ def _tool_resize():
         st.warning("ขนาดงานเกินกำลังประมวลผลของเว็บ ระบบลดจำนวนพิกเซล/DPI เพื่อป้องกันเว็บค้าง")
     st.caption("ฟอนต์ที่เป็นภาพพิกเซลสามารถปรับขอบให้ดูเรียบขึ้นได้ แต่ไม่ได้กลายเป็นเวกเตอร์หรือแก้คำในภาพด้วยฟอนต์จริง")
 
-    st.markdown("#### 🔍 พรีวิวก่อน–หลังแบบลากเส้นจริง")
+    st.markdown("### 🔍 ลากเส้น ↔ ดูภาพก่อน–หลัง (อยู่ในโหมดอัพสเกล)")
     if image is not None:
         st.caption("👇 **ลากปุ่ม ↔ ที่เส้นขาวกลางภาพ** เพื่อเทียบภาพต้นฉบับกับโหมดปรับคมที่เลือก ปรับตัวเลือกด้านบนแล้วดูผลใหม่ได้ทันที")
         with st.spinner("กำลังประมวลผลภาพก่อน–หลังขนาดพรีวิว..."):
@@ -413,7 +422,7 @@ def _tool_resize():
     fingerprint = (hashlib.sha256(up.getvalue()).hexdigest() if up is not None else "")
     settings = (fingerprint, wpx, hpx, effective_dpi, framing, mode, sharpen,
                 smooth, fmt, cmyk)
-    if st.button("🖨️ สร้างไฟล์ขยายภาพและปรับเส้นคม", use_container_width=True,
+    if st.button("🚀 สร้างไฟล์อัพสเกล / ปรับคม พร้อมพิมพ์", use_container_width=True,
                  key="studio_resize_generate"):
         if image is None:
             st.error("กรุณาอัปโหลดภาพก่อนสร้างไฟล์")
@@ -439,6 +448,10 @@ def _tool_resize():
         st.caption("มีการเปลี่ยนภาพหรือค่าปรับแต่ง กรุณากดสร้างไฟล์อีกครั้งเพื่อให้ตรงกับพรีวิวล่าสุด")
 
     st.caption("พรีวิวเป็นการประมวลผลจริงบนภาพย่อ เพื่อให้ลากได้ลื่นไหล ไม่ใช่การซูมไฟล์เต็มความละเอียด • DPI และขนาดพิมพ์จริงใช้ค่าตามไฟล์ที่ดาวน์โหลด")
+    st.caption("การขยายภาพไม่สามารถสร้างรายละเอียดที่หายไปจริงด้วย AI และการส่งออก CMYK ควรตรวจโปรไฟล์ ICC กับโรงพิมพ์")
+
+
+ะเอียด • DPI และขนาดพิมพ์จริงใช้ค่าตามไฟล์ที่ดาวน์โหลด")
     st.caption("การขยายภาพไม่สามารถสร้างรายละเอียดที่หายไปจริงด้วย AI และการส่งออก CMYK ควรตรวจโปรไฟล์ ICC กับโรงพิมพ์")
 
 
