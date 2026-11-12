@@ -314,6 +314,8 @@ def _resize_preset_preview(image, preset):
         st.caption(f"ภาพต้นฉบับ {image.width:,} × {image.height:,} พิกเซล")
     if "studio_resize_preset_v3" not in st.session_state:
         _set_resize_preset("🪧 ป้ายตัวหนังสือคม")
+    elif "studio_resize_preset_dropdown_v4" not in st.session_state:
+        st.session_state["studio_resize_preset_dropdown_v4"] = st.session_state["studio_resize_preset_v3"]
     st.markdown("**🎨 เลือกรูปแบบเพิ่มความคม**")
     st.selectbox(
         "รูปแบบปรับคมสำเร็จรูป (เลือกแล้วอัปเดตตัวเลื่อนอัตโนมัติ)",
@@ -913,7 +915,7 @@ def render_print_studio():
     mode = st.radio(
         "เลือกเครื่องมือในสตูดิโองานพิมพ์",
         [
-            "🔎 1. ขยายภาพ / DPI • เลือกรูปแบบปรับคมและลากก่อน–หลัง",
+            "🔎 1. อัพสเกลภาพ / DPI • ปรับคมและลากก่อน–หลัง",
             "🔍 เปรียบเทียบภาพก่อน–หลังจากสองไฟล์",
             "🖱️ แก้ข้อความบนภาพแบบคลิก / ลาก",
             "✏️ 2. แก้ข้อความบนภาพ (แบบเดิม)",
