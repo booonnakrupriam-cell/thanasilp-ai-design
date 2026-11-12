@@ -5,6 +5,7 @@ the Streamlit server; finished PNG and editable project JSON download in browser
 from __future__ import annotations
 
 import base64
+import json
 from io import BytesIO
 from pathlib import Path
 
@@ -175,8 +176,31 @@ def render_interactive_editor():
         type=["png", "jpg", "jpeg", "webp"],
         key="studio_interactive_image_upload",
     )
+    project_upload = st.file_uploader(
+        "หรือเปิดโปรเจกต์เก่า (.json) เพื่อแก้ต่อ โดยไม่ต้องอัปโหลดภาพซ้ำ",
+        type=["json"], key="studio_interactive_project_upload",
+    )
+    if project_upload is not None:
+        if project_upload.size > 35 * 1024 * 1024:
+            st.error("ไฟล์โปรเจกต์ใหญ่เกิน 35 MB")
+            return
+        try:
+            project = json.loads(project_upload.getvalue().decode("utf-8"))
+            image_src = project.get("image", "")
+            if (
+                project.get("version") != 1 or not isinstance(image_src, str)
+                or not image_src.startswith(("data:image/png;base64,", "data:image/jpeg;base64,", "data:image/webp;base64,"))
+                or not isinstance(project.get("layers"), list)
+            ):
+                raise ValueError("รูปแบบไม่ถูกต้อง")
+        except (ValueError, UnicodeDecodeError, TypeError, AttributeError):
+            st.error("ไฟล์นี้ไม่ใช่โปรเจกต์ของธนศิลป์ หรือข้อมูลไม่สมบูรณ์")
+            return
+        st.success("พบโปรเจกต์เดิมแล้ว สามารถแก้ไขต่อและบันทึกงานใหม่ได้")
+        EDITOR(data={"image": image_src, "project": project}, key="studio_interactive_editor_v1")
+        return
     if upload is None:
-        st.info("เลือกภาพป้ายเพื่อเปิดพื้นที่แก้ไขแบบคลิกและลาก")
+        st.info("เลือกภาพป้ายเพื่อเปิดพื้นที่แก้ไขแบบคลิกและลาก หรือเปิดโปรเจกต์ JSON ที่เคยบันทึกไว้")
         return
     if upload.size > 25 * 1024 * 1024:
         st.error("รูปภาพต้องมีขนาดไม่เกิน 25 MB")
