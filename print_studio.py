@@ -9,7 +9,6 @@ from pathlib import Path
 
 import streamlit as st
 
-from interactive_sign_editor import render_interactive_editor
 from print_preview import prepare_quality_previews, render_quality_preview, render_quality_from_images, make_quality_demo_previews
 from PIL import (
     Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter,
@@ -706,7 +705,12 @@ def render_print_studio():
     )
     st.divider()
     if mode.startswith("🖱️"):
-        render_interactive_editor()
+        try:
+            from interactive_sign_editor import render_interactive_editor
+            render_interactive_editor()
+        except (ImportError, AttributeError, OSError) as exc:
+            st.error("ยังเปิดเครื่องมือแก้ข้อความแบบลากไม่ได้ กรุณาใช้โหมดแก้ข้อความแบบเดิมหรือพรีวิวก่อน–หลังชั่วคราว")
+            st.caption("ระบบหลักและเครื่องมืออื่นยังใช้งานได้ตามปกติ")
     elif mode.startswith("🔍"):
         _tool_quality_comparison()
     elif mode.startswith("🔎"):
