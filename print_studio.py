@@ -270,6 +270,22 @@ RESIZE_PRESETS = {
 }
 
 
+SIGN_SIZE_PRESETS = {
+    "200 × 100 ซม.": (200.0, 100.0),
+    "240 × 120 ซม.": (240.0, 120.0),
+    "300 × 100 ซม.": (300.0, 100.0),
+    "300 × 150 ซม.": (300.0, 150.0),
+    "X-Stand 60 × 160": (60.0, 160.0),
+    "Roll-up 80 × 200": (80.0, 200.0),
+}
+
+
+def _set_resize_size_preset(label):
+    width, height = SIGN_SIZE_PRESETS[label]
+    st.session_state["studio_resize_width"] = width
+    st.session_state["studio_resize_height"] = height
+
+
 def _set_resize_preset(name):
     mode, strength, smooth, _ = RESIZE_PRESETS[name]
     st.session_state["studio_resize_preset_v3"] = name
@@ -324,6 +340,14 @@ def _tool_resize():
                         on_click=_set_resize_preset, args=(preset_name,))
     st.caption("รูปตัวอย่างนี้ใช้ภาพที่อัปโหลด หรือใช้ภาพสาธิตถ้ายังไม่อัปโหลด")
 
+    with st.expander("📐 เลือกขนาดป้ายยอดนิยม (กดเลือกได้) — หรือกรอกขนาดเอง", expanded=False):
+        size_cols = st.columns(3)
+        for size_index, (size_label, (size_w, size_h)) in enumerate(SIGN_SIZE_PRESETS.items()):
+            with size_cols[size_index % 3]:
+                st.button(size_label,
+                          key="studio_resize_size_choice_" + str(size_index),
+                          use_container_width=True,
+                          on_click=_set_resize_size_preset, args=(size_label,))
     c1, c2, c3 = st.columns(3)
     with c1:
         width_cm = st.number_input("กว้าง (ซม.)", 1.0, 600.0, 100.0, 1.0, key="studio_resize_width")
