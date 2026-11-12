@@ -6,13 +6,35 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
-from print_studio import render_print_studio, _tool_quality_comparison
-
-# Direct entry: opens the before/after slider immediately without searching tabs.
+# Only load the selected tool when required; a broken optional editor must
+# never take the entire sign-design site offline.
 if st.query_params.get("studio") == "compare":
     st.title("🔍 ธนศิลป์ • ลากเส้นดูความคมชัด ก่อน–หลัง")
     st.link_button("🏠 กลับหน้าเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
-    _tool_quality_comparison()
+    try:
+        from print_studio import _tool_quality_comparison
+        _tool_quality_comparison()
+    except (ImportError, AttributeError, OSError):
+        # Independent comparison fallback, no advanced-editor dependencies.
+        from print_preview import make_quality_demo_previews, render_quality_preview
+        from PIL import Image, ImageOps
+        from io import BytesIO
+
+        st.warning("โหมดสตูดิโอกำลังปรับปรุง แต่ยังใช้พรีวิวลากเส้นก่อน–หลังได้")
+        b, a = make_quality_demo_previews()
+        render_quality_preview(b, a, title="ทดลองลากเส้น ↔ ก่อน–หลัง ได้ทันที")
+        left, right = st.columns(2)
+        with left:
+            source_before = st.file_uploader("ก่อนแก้", type=["png","jpg","jpeg"], key="fallback_before")
+        with right:
+            source_after = st.file_uploader("หลังแก้", type=["png","jpg","jpeg"], key="fallback_after")
+        if source_before is not None and source_after is not None:
+            with Image.open(BytesIO(source_before.getvalue())) as im_before:
+                before_image = ImageOps.exif_transpose(im_before).copy()
+            with Image.open(BytesIO(source_after.getvalue())) as im_after:
+                after_image = ImageOps.exif_transpose(im_after).copy()
+            from print_preview import render_quality_from_images
+            render_quality_from_images(before_image, after_image)
     st.stop()
 
 st.markdown("""
@@ -215,7 +237,12 @@ with tab_graphic:
 
 
 with tab_print_studio:
-    render_print_studio()
+    try:
+        from print_studio import render_print_studio
+        render_print_studio()
+    except (ImportError, AttributeError, OSError):
+        st.error("มีปัญหาโหลดเครื่องมือสตูดิโอบางส่วน แต่หน้าเว็บและหมวดสร้างคำสั่ง AI ยังใช้ได้ครับ")
+        st.link_button("🔍 เปิดเครื่องมือลากเส้นดูภาพก่อน–หลัง", "https://thanasin-ai-design.streamlit.app/?studio=compare")
 
 with tab_extra:
     st.markdown('### 🧰 เครื่องมือพิเศษสำหรับงานออกแบบ')
