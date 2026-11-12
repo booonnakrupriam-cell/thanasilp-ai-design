@@ -4,9 +4,9 @@ from urllib.parse import quote
 import streamlit as st
 import streamlit.components.v1 as components
 
-from print_studio import render_print_studio
-
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
+
+from print_studio import render_print_studio
 
 st.markdown("""
 <style>
