@@ -28,7 +28,7 @@ def _make_jpeg_preview(img, size, resampling):
     if img.size != size:
         img = img.resize(size, resampling)
     out = BytesIO()
-    img.save(out, format="JPEG", quality=89, subsampling=0)
+    img.save(out, format="JPEG", quality=95, subsampling=0)
     return out.getvalue()
 
 
@@ -68,7 +68,7 @@ _HTML = r"""
   .chip{font-size:12px;font-weight:700;padding:5px 11px;border-radius:16px;background:#1a3254}
   .chip.left{background:#2c3846}.chip.right{background:#125a82}
   .frame{width:100%;height:420px;position:relative;overflow:hidden;border-radius:10px;
-    border:1px solid #49617d;touch-action:none;cursor:ew-resize;
+    border:2px solid #50b9ff;touch-action:none;cursor:ew-resize;
     background-color:#e1e5ed;background-image:
       linear-gradient(45deg,#d2d9e4 25%,transparent 25%,transparent 75%,#d2d9e4 75%,#d2d9e4),
       linear-gradient(45deg,#d2d9e4 25%,transparent 25%,transparent 75%,#d2d9e4 75%,#d2d9e4);
@@ -77,7 +77,7 @@ _HTML = r"""
   .image-layer img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
     transform-origin:center center;user-select:none;-webkit-user-drag:none;will-change:transform}
   .after-layer{clip-path:inset(0 calc(100% - var(--split)) 0 0)}
-  .divider{position:absolute;top:0;bottom:0;left:var(--split);width:2px;background:white;
+  .divider{position:absolute;top:0;bottom:0;left:var(--split);width:4px;background:white;
     box-shadow:0 0 8px #0009;transform:translateX(-50%);pointer-events:none}
   .divider span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
     border:3px solid white;border-radius:100%;width:46px;height:46px;display:flex;
