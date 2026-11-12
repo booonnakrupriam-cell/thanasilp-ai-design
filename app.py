@@ -6,7 +6,14 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
-from print_studio import render_print_studio
+from print_studio import render_print_studio, _tool_quality_comparison
+
+# Direct entry: opens the before/after slider immediately without searching tabs.
+if st.query_params.get("studio") == "compare":
+    st.title("🔍 ธนศิลป์ • ลากเส้นดูความคมชัด ก่อน–หลัง")
+    st.link_button("🏠 กลับหน้าเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
+    _tool_quality_comparison()
+    st.stop()
 
 st.markdown("""
 <style>
@@ -124,6 +131,15 @@ st.markdown("""
 <div class="th-feature"><div class="th-feature-icon">🚚</div><div><b>จัดส่งทั่วไทย</b><br><span>บริการจัดส่งงานสิ่งพิมพ์</span></div></div>
 </div>
 """, unsafe_allow_html=True)
+
+# An obvious entry point independent of which Streamlit tab is active.
+st.link_button(
+    "🔍 ลากเส้นดูภาพก่อน–หลัง / ซูม 1200% (กดดูตัวอย่างทันที)",
+    "https://thanasin-ai-design.streamlit.app/?studio=compare",
+    use_container_width=True,
+    type="primary",
+)
+st.caption("คลิกปุ่มนี้เพื่อเปิดภาพตัวอย่างที่มีเส้นลากกลางภาพทันที ไม่ต้องหาโหมดย่อยหรืออัปโหลดก่อน")
 
 def section_title(title):
     st.markdown(f'<div class="form-section-title">{html.escape(title)}</div>', unsafe_allow_html=True)
