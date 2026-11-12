@@ -6,13 +6,14 @@ The viewer runs in a Streamlit HTML component, requiring no external API.
 from __future__ import annotations
 
 import base64
+import glob
 import html
 import math
 from io import BytesIO
 
 import streamlit as st
 import streamlit.components.v1 as components
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageDraw, ImageFont
 
 
 def _make_jpeg_preview(img, size, resampling):
@@ -225,6 +226,56 @@ _HTML = r"""
 </script>
 </body></html>
 """
+
+
+
+@st.cache_data(show_spinner=False)
+def make_quality_demo_previews():
+    """Simple built-in demo: visibly softened and clear renditions of the SAME sign.
+
+    Demonstrates a slider; does not claim that upscaling algorithms reconstruct detail.
+    """
+    width, height = 1200, 460
+    after = Image.new("RGB", (width, height), "#dcebff")
+    d = ImageDraw.Draw(after)
+    d.rectangle((8, 8, width - 9, height - 9), fill="#0840a8", outline="#f6b716", width=12)
+    d.rounded_rectangle((40, 45, width - 40, height - 48), radius=35,
+                        fill="#f7fbff", outline="#ffc925", width=10)
+    d.rounded_rectangle((72, 66, width - 72, 149), radius=18, fill="#fff0bb")
+    d.rounded_rectangle((72, height - 142, width - 72, height - 75),
+                        radius=16, fill="#1359b8")
+    d.line([(78, 190), (1140, 190)], fill="#f2c341", width=8)
+    d.line([(90, 318), (1110, 318)], fill="#1c76bd", width=4)
+    for i in range(8):
+        x = 84 + i * 146
+        d.ellipse((x, 378, x + 25, 403), fill="#f5c040", outline="#d37a11", width=3)
+    fonts = []
+    for pattern in (
+        "/usr/share/fonts/truetype/tlwg/Garuda*.ttf",
+        "/usr/share/fonts/truetype/tlwg/Loma*.ttf",
+        "/usr/share/fonts/**/*NotoSansThai*.ttf",
+    ):
+        fonts.extend(glob.glob(pattern, recursive=True))
+    font_path = fonts[0] if fonts else None
+    def draw_center(text, y, size, fill):
+        try:
+            font = ImageFont.truetype(font_path or "DejaVuSans.ttf", size)
+            bounds = d.textbbox((0, 0), text, font=font)
+            x = (width - bounds[2] + bounds[0]) // 2
+            d.text((x, y), text, font=font, fill=fill)
+        except (OSError, UnicodeError):
+            return
+    if font_path:
+        draw_center("ธนศิลป์ ดีไซน์", 154, 80, "#0645a9")
+        draw_center("พรีวิวตรวจความคมชัด ก่อน–หลัง", 265, 40, "#d32c38")
+    else:
+        draw_center("THANASILP PRINT STUDIO", 165, 73, "#0645a9")
+        draw_center("DRAG BEFORE AND AFTER", 271, 42, "#d32c38")
+    # Deliberately lower-resolution example, for illustration only.
+    before = after.resize((240, 92), Image.Resampling.BILINEAR)
+    before = before.resize(after.size, Image.Resampling.BILINEAR)
+    a, b = prepare_quality_previews(before, after)
+    return a, b
 
 
 def render_quality_preview(before_jpg: bytes | None, after_jpg: bytes,
