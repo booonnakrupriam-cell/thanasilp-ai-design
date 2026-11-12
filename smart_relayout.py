@@ -1,8 +1,7 @@
-"""Thanasilp: honest, non-distorting raster-block re-layout and AI rebuild handoff.
+"""Safe composition for print signs from flattened images.
 
-The input is a FLATTENED raster. Grouped horizontal strips can be arranged
-without distorting glyphs or round objects, but cannot semantically isolate
-text, people or decorative objects. The UI makes this distinction explicit.
+No horizontal cutting, split strips, object distortion, or automatic claims
+that a flattened JPG/PNG can be semantically rearranged without AI.
 """
 from __future__ import annotations
 
@@ -21,221 +20,224 @@ MAX_OUTPUT_PIXELS = 18_000_000
 def _pixel_dimensions(width_cm: float, height_cm: float, dpi: int):
     w = max(1, round(width_cm / 2.54 * dpi))
     h = max(1, round(height_cm / 2.54 * dpi))
-    actual = float(dpi)
+    actual_dpi = float(dpi)
     if w * h > MAX_OUTPUT_PIXELS:
-        reduction = math.sqrt(MAX_OUTPUT_PIXELS / (w * h))
-        w, h = max(1, int(w * reduction)), max(1, int(h * reduction))
-        actual *= reduction
-    return w, h, round(actual, 2)
-
-
-def _suggest_cuts(image: Image.Image, parts: int):
-    """Look for relatively quiet horizontal lines near equal-height splits."""
-    reduced = image.convert("RGB")
-    reduced.thumbnail((460, 720), Image.Resampling.BILINEAR)
-    gray = ImageOps.grayscale(reduced).filter(ImageFilter.FIND_EDGES)
-    w, h = gray.size
-    row_energy = [sum(gray.crop((0, y, w, y + 1)).getdata()) / w for y in range(h)]
-    result = []
-    for index in range(1, parts):
-        center = round(h * index / parts)
-        margin = max(2, round(h * .055))
-        lo = max(2, center - margin)
-        hi = min(h - 2, center + margin)
-        best = min(range(lo, hi + 1), key=lambda y: row_energy[y])
-        result.append(best / h)
-    return result
+        factor = math.sqrt(MAX_OUTPUT_PIXELS / (w * h))
+        w, h = max(1, int(w * factor)), max(1, int(h * factor))
+        actual_dpi *= factor
+    return w, h, round(actual_dpi, 2)
 
 
 def _background(source: Image.Image, size: tuple[int, int], style: str, color: str):
+    w, h = size
     if style == "สีพื้นเลือกเอง":
         return Image.new("RGBA", size, color)
-    if style == "สีเฉลี่ยจากภาพต้นฉบับ":
-        im = source.convert("RGB").resize((1, 1), Image.Resampling.BOX)
-        return Image.new("RGBA", size, im.getpixel((0, 0)) + (255,))
-    # A blurred copy fills the new canvas without white margins.
-    sw, sh = size
-    factor = min(1.0, 850 / sw, 850 / sh)
-    small = (max(1, round(sw * factor)), max(1, round(sh * factor)))
-    back = ImageOps.fit(source.convert("RGB"), small, method=Image.Resampling.BILINEAR)
-    back = back.filter(ImageFilter.GaussianBlur(max(8, min(small) // 18)))
-    back = ImageEnhance.Brightness(back).enhance(0.72)
-    return back.resize(size, Image.Resampling.BILINEAR).convert("RGBA")
+
+    rgb = source.convert("RGB")
+    if style == "ฉากหลังเบลอจากภาพต้นฉบับ":
+        # Only the background is expanded; foreground remains in ONE piece.
+        factor = min(1.0, 720 / max(1, w), 720 / max(1, h))
+        preview_size = (max(1, round(w * factor)), max(1, round(h * factor)))
+        back = ImageOps.fit(rgb, preview_size, method=Image.Resampling.BILINEAR)
+        back = back.filter(ImageFilter.GaussianBlur(max(8, min(preview_size) / 15)))
+        back = ImageEnhance.Brightness(back).enhance(.78)
+        return back.resize(size, Image.Resampling.BILINEAR).convert("RGBA")
+
+    # A smooth background derived from the edge colors avoids white bars.
+    sample = rgb.copy()
+    sample.thumbnail((360, 360), Image.Resampling.BILINEAR)
+    sw, sh = sample.size
+    band = max(1, sh // 18)
+    top_rgb = sample.crop((0, 0, sw, band)).resize((1, 1), Image.Resampling.BOX).getpixel((0, 0))
+    bottom_rgb = sample.crop((0, sh - band, sw, sh)).resize((1, 1), Image.Resampling.BOX).getpixel((0, 0))
+    result = Image.new("RGBA", size, top_rgb + (255,))
+    d = ImageDraw.Draw(result)
+    for y in range(h):
+        frac = y / max(1, h - 1)
+        rgb_row = tuple(int(round(top_rgb[i] * (1 - frac) + bottom_rgb[i] * frac)) for i in range(3))
+        d.line((0, y, w, y), fill=rgb_row + (255,))
+    return result
 
 
-def _safe_contain(source, size, background, color):
-    out = _background(source, size, background, color)
-    fitted = ImageOps.contain(source.convert("RGBA"), size, method=Image.Resampling.LANCZOS)
-    out.alpha_composite(fitted, ((size[0] - fitted.width) // 2,
-                                 (size[1] - fitted.height) // 2))
-    return out
+def _compose_whole_image(source: Image.Image, size: tuple[int, int],
+                         style: str, color: str,
+                         scale: int = 100, x: int = 50, y: int = 50):
+    """Keep every source pixel together and use ONE isotropic scale factor."""
+    canvas = _background(source, size, style, color)
+    width, height = size
+    scale = max(25, min(100, int(scale)))
+    area = (max(1, int(width * scale / 100)),
+            max(1, int(height * scale / 100)))
+    foreground = ImageOps.contain(source.convert("RGBA"), area, method=Image.Resampling.LANCZOS)
+    px = round((width - foreground.width) * max(0, min(100, int(x))) / 100)
+    py = round((height - foreground.height) * max(0, min(100, int(y))) / 100)
+    canvas.alpha_composite(foreground, (px, py))
+    return canvas
 
 
-def relayout_bands(source: Image.Image, size: tuple[int, int], cuts: list[float],
-                   background: str, color: str, spacing: int = 100,
-                   top_offset: int = 50, margin_pct: int = 2):
-    """Uniformly scale separate horizontal regions, then redistribute them.
-
-    A circular ornament fully inside any band stays circular; if a cut crosses
-    an ornament or glyph, that ornament will be split. User can adjust cuts.
-    """
-    sw, sh = source.size
-    tw, th = size
-    norm = sorted({max(.02, min(.98, float(v))) for v in cuts})
-    bounds = [0] + [min(sh - 1, max(1, round(v * sh))) for v in norm] + [sh]
-    bounds = list(dict.fromkeys(bounds))
-    if len(bounds) < 2:
-        return _safe_contain(source, size, background, color)
-    margin = max(0, int(tw * margin_pct / 100))
-    scale = min((tw - 2 * margin) / sw, (th - 2 * margin) / sh) * .99
-    resized = []
-    for y1, y2 in zip(bounds[:-1], bounds[1:]):
-        if y2 <= y1:
-            continue
-        region = source.crop((0, y1, sw, y2)).convert("RGBA")
-        resized.append(region.resize((max(1, int(sw * scale)),
-                                      max(1, int((y2 - y1) * scale))),
-                                     Image.Resampling.LANCZOS))
-    out = _background(source, size, background, color)
-    if not resized:
-        return out
-    used = sum(img.height for img in resized)
-    remain = max(0, th - used)
-    # spacing=0: gaps around outer edges; 100: distribute into inner gaps.
-    internal = remain * spacing / 100
-    outer = remain - internal
-    start_y = int(outer * top_offset / 100)
-    gap = internal / max(1, len(resized) - 1) if len(resized) > 1 else 0
-    y = float(start_y)
-    for index, obj in enumerate(resized):
-        x = (tw - obj.width) // 2
-        out.alpha_composite(obj, (x, int(round(y))))
-        y += obj.height + gap
-    return out
-
-
-def _png_or_tiff(image, fmt, dpi, cmyk):
-    buf = BytesIO()
+def _make_file(image: Image.Image, fmt: str, dpi: float, cmyk: bool):
+    result = BytesIO()
     if fmt == "TIFF":
         image.convert("CMYK" if cmyk else "RGB").save(
-            buf, format="TIFF", compression="tiff_lzw", dpi=(dpi, dpi))
+            result, format="TIFF", compression="tiff_lzw", dpi=(dpi, dpi))
     else:
-        image.save(buf, format="PNG", dpi=(dpi, dpi))
-    return buf.getvalue()
+        image.save(result, format="PNG", dpi=(dpi, dpi))
+    return result.getvalue()
 
 
-def _ai_prompt(width_cm, height_cm, additional):
-    return (f"สร้างแบบป้ายใหม่จากภาพตัวอย่างที่แนบมา ให้มีขนาด {width_cm:g} × "
-            f"{height_cm:g} เซนติเมตร โดยจัดองค์ประกอบใหม่ทุกส่วนตามต้นฉบับ "
-            " (true redesign / smart re-layout) ไม่ใช่การยืดภาพ ไม่ใช่การครอป "
-            "และไม่ใช่การเติมกรอบขาวรอบภาพ ให้จัดวางพื้นหลัง ลายไทย รูปคน "
-            "โลโก้ กรอบข้อความ และเครื่องประดับให้เหมาะกับสัดส่วนป้ายใหม่อย่างสมดุล "
-            "วงกลมทุกวงต้องยังเป็นวงกลม วัตถุไม่เสียสัดส่วน รูปคนคงใบหน้าจริง "
-            "จัดข้อความใหม่ด้วยตัวอักษรไทยที่ถูกต้อง สระ วรรณยุกต์ไม่ทับกัน "
-            "ขอบอักษรและเส้นโค้งเรียบคม รักษาคำ ชื่อ วันที่ เบอร์โทร เลขไทย "
-            "และเจตนาของข้อความต้นฉบับอย่างเคร่งครัด ไม่แต่งข้อความใหม่เอง "
-            "คงโทนสี อัตลักษณ์และลวดลายสำคัญของต้นฉบับ พร้อมงานพิมพ์ "
-            "หากอ่านข้อความต้นฉบับไม่ชัดให้ถามเพื่อยืนยัน ห้ามเดา "
-            f"รายละเอียดเพิ่มเติม: {additional.strip() or 'ไม่มี'}")
+def _ai_rebuild_prompt(w_cm: float, h_cm: float, verified_text: str, details: str):
+    text_rule = (
+        "ข้อความที่ยืนยันจากผู้ใช้ (ต้องเขียนตามนี้เท่านั้น): " + verified_text.strip()
+        if verified_text.strip()
+        else "คงข้อความต้นฉบับ แต่ถ้ามีข้อความอ่านไม่ชัดต้องสอบถาม ห้ามเดาหรือเปลี่ยนคำ"
+    )
+    return (
+        f"โปรดสร้างภาพป้ายใหม่โดยใช้ภาพต้นฉบับที่แนบเป็นภาพอ้างอิง "
+        f"ขนาดงานใหม่ {w_cm:g} × {h_cm:g} ซม. "
+        "ต้องออกแบบและจัดองค์ประกอบใหม่ทั้งภาพจริง (full re-composition) "
+        "ไม่ใช่ตัดภาพเป็นแถบ ไม่ใช่เว้นช่องว่างระหว่างชิ้น ไม่ใช่ครอป/บีบ/ยืดภาพทั้งผืน "
+        "ไม่ใช่แค่เติมขอบขาวหรือพื้นหลังเบลอ ให้สร้างพื้นหลังและขยายลายตกแต่งใหม่ "
+        "ให้ครอบคลุมพื้นที่ทั้งหมดอย่างเป็นเนื้อเดียวกัน จัดวางบุคคล ภาพถ่ายย่อย "
+        "ข้อความ กรอบภาพ โลโก้ หัวใจ วงกลม และดอกไม้ใหม่โดยรักษาสัดส่วนแต่ละชิ้น "
+        "วงกลมต้องกลมไม่เป็นวงรี รูปคนไม่ผิดสัดส่วน รักษาใบหน้าจากภาพต้นฉบับ "
+        "รูปถ่ายทุกภาพไม่ถูกตัดกลางตัว หัวใจและข้อความต้องไม่ถูกแบ่งเป็นท่อน "
+        "กรอบและลวดลายเชื่อมต่ออย่างสวยงาม ไม่ปรากฏรอยต่อเป็นแถบหรือพื้นที่ว่างคั่น "
+        "รักษาสไตล์ สี อารมณ์ และรายละเอียดสำคัญของภาพต้นฉบับ "
+        "ฟอนต์ไทยคมชัด มีหัว/ไม่มีหัวตามลักษณะเดิม สระวรรณยุกต์ถูกต้อง "
+        "ตรวจข้อความและวันที่อย่างเคร่งครัด ห้ามแต่งเติมหรือสะกดชื่อเอง "
+        "ภาพสุดท้ายต้องสมบูรณ์เต็มพื้นที่ ดูเป็นงานป้ายออกแบบใหม่พร้อมตรวจงานพิมพ์ "
+        + text_rule + " "
+        + ("ข้อกำหนดเพิ่มเติม: " + details.strip() if details.strip() else "")
+    )
+
+
+def _render_ai_rebuild(w_cm: float, h_cm: float):
+    st.info("วิธีนี้ตรงกับงานที่ต้องการเปลี่ยนอัตราส่วนและสร้างองค์ประกอบใหม่เต็มป้าย "
+            "แต่เว็บไซต์ยังไม่ได้เชื่อม AI สร้างภาพโดยตรง: ระบบจะเตรียมพรอมป์ให้ส่งไปพร้อมภาพต้นฉบับ")
+    checked_text = st.text_area(
+        "ข้อความที่ต้องรักษาให้ตรง (แนะนำให้พิมพ์ข้อความต้นฉบับ)",
+        key="smart_verified_text_v2", height=105,
+        placeholder="ชื่อบุคคล / ชื่องาน / วันที่ / หน่วยงาน / ข้อความทั้งหมด")
+    more = st.text_area(
+        "รายละเอียดเพิ่มเติม", key="smart_ai_details_v2", height=90,
+        placeholder="เช่น ย้ายรูปคนไว้ซ้าย กรอบหัวใจไว้ขวา เก็บภาพถ่ายย่อยครบ")
+    prompt = _ai_rebuild_prompt(w_cm, h_cm, checked_text, more)
+    st.markdown("**📋 คัดลอกคำสั่งนี้ พร้อมแนบภาพต้นฉบับที่ยังไม่ถูกตัดให้ AI**")
+    st.code(prompt, language=None, wrap_lines=True)
+    st.link_button("🚀 เปิด ChatGPT พร้อมคำสั่ง", "https://chatgpt.com/?q=" + quote(prompt, safe=""),
+                   use_container_width=True)
+    first, second = st.columns(2)
+    with first:
+        st.link_button("✨ เปิด Gemini", "https://gemini.google.com/app", use_container_width=True)
+    with second:
+        st.link_button("🌐 เปิด Meta AI", "https://www.meta.ai/", use_container_width=True)
+    st.caption("หากลิงก์ ChatGPT ไม่แสดงคำสั่ง ให้วางจากกล่องด้านบนเอง "
+               "และแนบภาพต้นฉบับด้วยทุกครั้ง ผลงาน AI ต้องตรวจใบหน้า วงกลม และตัวสะกดก่อนพิมพ์")
 
 
 def render_smart_relayout(source: Image.Image | None):
-    st.markdown("### 🧩 จัดองค์ประกอบใหม่โดยไม่ทำให้รูปทรงเบี้ยว")
-    st.caption("ตัวอย่าง 150×200 → 100×200 ซม.: ลดขนาดองค์ประกอบเป็นส่วน ๆ และกระจายตำแหน่งใหม่แทนการยืดภาพ")
-    option = st.radio(
-        "เลือกวิธีสร้างงานใหม่",
-        ["🧩 จัดบล็อกภาพใหม่ (ทำได้ทันทีบนเว็บ)",
-         "✨ สร้างใหม่ทั้งงานด้วย AI (รักษาคน โลโก้ วงกลม และข้อความ)"],
-        key="smart_method", horizontal=False)
-    a, b, c = st.columns(3)
-    with a:
-        width_cm = st.number_input("กว้างใหม่ (ซม.)", 10., 600., 100., step=10., key="smart_width")
-    with b:
-        height_cm = st.number_input("สูงใหม่ (ซม.)", 10., 600., 200., step=10., key="smart_height")
-    with c:
-        dpi = st.number_input("DPI เป้าหมาย", 30, 600, 150, step=10, key="smart_dpi")
-    wpx, hpx, dpi_effective = _pixel_dimensions(width_cm, height_cm, dpi)
-    st.caption(f"ไฟล์จริงที่สร้างได้: {wpx:,} × {hpx:,} พิกเซล (DPI ประมาณ {dpi_effective:g})")
-    if dpi_effective < dpi:
-        st.warning("เกินขีดจำกัดหน่วยความจำของเว็บ จึงลดพิกเซล/DPI ที่สร้างจริงให้เหมาะสม")
-    if option.startswith("✨"):
-        st.info("การสร้างใหม่ทั้งงานให้เข้าใจข้อความ วงกลม รูปคนและลายกรอบอย่างถูกต้อง "
-                "ต้องให้ AI สร้างภาพใหม่จากต้นฉบับ เว็บไซต์นี้ยังไม่มี AI สร้างภาพอัตโนมัติในตัว")
-        details = st.text_area("รายละเอียดเพิ่มเติม / สิ่งที่ต้องคงเดิม", key="smart_ai_details",
-                               placeholder="เช่น เก็บข้อความและรูปคนครบ ย้ายรูปไปด้านขวา ไม่เพิ่มขอบขาว")
-        prompt = _ai_prompt(width_cm, height_cm, details)
-        st.text_area("คำสั่งสร้างใหม่จากภาพแนบ (คัดลอกได้)", value=prompt,
-                     height=220, key=f"smart_ai_prompt_{width_cm:g}_{height_cm:g}_{hash(details)}")
-        st.link_button("🚀 เปิด ChatGPT เพื่อสร้างภาพใหม่", "https://chatgpt.com/?q=" + quote(prompt, safe=""), use_container_width=True)
-        ai_left, ai_right = st.columns(2)
-        with ai_left:
-            st.link_button("✨ เปิด Gemini", "https://gemini.google.com/app", use_container_width=True)
-        with ai_right:
-            st.link_button("🌐 เปิด Meta AI", "https://www.meta.ai/", use_container_width=True)
-        st.caption("ต้องแนบภาพต้นฉบับเข้าแชท AI ด้วย เว็บไซต์ไม่สามารถส่งไฟล์ที่อัปโหลดไปโดยอัตโนมัติ "
-                   "สำหรับ Gemini และ Meta AI ให้คัดลอกข้อความด้านบนไปวางในแชท")
+    st.markdown("### 🧩 ปรับขนาดป้ายแบบไม่ตัดภาพเป็นแถบ")
+    st.caption("แก้ปัญหาภาพคน กรอบหัวใจ และตัวหนังสือถูกแบ่งเป็นท่อน • ปิดวิธีตัดแถบแบบเดิมแล้ว")
+    mode = st.radio(
+        "เลือกวิธีจัดภาพใหม่",
+        [
+            "🖼️ รักษาภาพครบทั้งผืน • ไม่ตัด ไม่ยืด (สร้างไฟล์บนเว็บ)",
+            "✨ ให้ AI ออกแบบใหม่ทั้งภาพ • จัดองค์ประกอบใหม่จริง",
+        ],
+        key="smart_method_safe_v2",
+    )
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        width_cm = st.number_input("กว้างใหม่ (ซม.)", 10.0, 600.0, 100.0,
+                                   step=10.0, key="smart_width")
+    with c2:
+        height_cm = st.number_input("สูงใหม่ (ซม.)", 10.0, 600.0, 200.0,
+                                    step=10.0, key="smart_height")
+    with c3:
+        requested_dpi = st.number_input("DPI ที่ต้องการ", 30, 600, 150,
+                                        step=10, key="smart_dpi")
+    width_px, height_px, actual_dpi = _pixel_dimensions(width_cm, height_cm, requested_dpi)
+    st.caption(f"ขนาดไฟล์ส่งออก {width_px:,} × {height_px:,} พิกเซล • DPI จริงประมาณ {actual_dpi:g}")
+    if actual_dpi < requested_dpi:
+        st.warning("ขนาดที่ขอใหญ่เกินข้อจำกัดของเว็บ ระบบลด DPI จริงเพื่อป้องกันเว็บค้าง")
+
+    if mode.startswith("✨"):
+        _render_ai_rebuild(width_cm, height_cm)
         return
 
-    st.info("โหมดนี้จัดส่วนภาพเป็นบล็อกใหม่จริง ไม่ใช่เพิ่มกรอบขาว แต่ไม่สามารถแยกข้อความ/คน/วงกลมทุกชิ้นจากรูป JPG/PNG ที่รวมชั้นแล้วได้อย่างสมบูรณ์ "
-            "ควรตรวจจุดแบ่งบล็อกไม่ให้ผ่านหน้าคน ตัวอักษร หรือวงกลม")
+    st.warning("โหมดนี้รักษาต้นฉบับทุกส่วน **เป็นภาพเดียวต่อเนื่อง** ไม่มีเส้นแบ่งและไม่มีส่วนหาย "
+               "แต่เมื่อเปลี่ยนอัตราส่วน จะต้องมีพื้นที่เสริมด้านข้างหรือบน–ล่าง "
+               "ถ้าต้องการให้เต็มพื้นที่โดยจัดคน/รูป/ตัวหนังสือใหม่อย่างอิสระ ให้เลือกโหมด AI")
     if source is None:
-        st.info("อัปโหลดภาพในช่องด้านบนก่อน แล้วจะเห็นการจัดวางอัตโนมัติพร้อมพรีวิวลากก่อน–หลัง")
+        st.info("อัปโหลดภาพ **ต้นฉบับก่อนถูกแบ่งเป็นแถบ** ในช่องด้านบนเพื่อใช้งาน")
         return
     if source.width * source.height > 35_000_000:
-        st.error("ไฟล์ต้นฉบับใหญ่เกิน 35 ล้านพิกเซล กรุณาลดขนาดก่อน")
+        st.error("ภาพต้นฉบับใหญ่เกิน 35 ล้านพิกเซล กรุณาลดขนาดก่อน")
         return
-    count = st.slider("จำนวนบล็อกแนวนอน", 2, 6, 3, key="smart_blocks")
-    background = st.selectbox("พื้นหลังของป้ายใหม่", ["เบลอจากภาพต้นฉบับ", "สีเฉลี่ยจากภาพต้นฉบับ", "สีพื้นเลือกเอง"], key="smart_background")
-    color = st.color_picker("สีพื้นกรณีเลือกสีเอง", "#F5F0E6", key="smart_bg_color", disabled=background != "สีพื้นเลือกเอง")
-    st.caption("เมื่อป้ายใหม่แคบลง ระบบจะลดขนาดทุกบล็อกในสัดส่วนเดียวกัน แล้วจัดระยะห่างใหม่ ไม่ทำให้วงกลมกลายเป็นวงรี")
-    auto_cuts = _suggest_cuts(source, count)
-    manual = st.checkbox("ปรับแนวแบ่งบล็อกด้วยตัวเองเพื่อไม่ตัดผ่านตัวหนังสือ", key="smart_manual_cuts")
-    if manual:
-        cut_values = []
-        for i, fraction in enumerate(auto_cuts):
-            val = st.slider(f"แนวแบ่งที่ {i + 1} จากด้านบน (%)", 2, 98, int(fraction * 100), key=f"smart_cut_{i+1}")
-            cut_values.append(val / 100)
-    else:
-        cut_values = auto_cuts
-    col1, col2 = st.columns(2)
-    with col1:
-        spacing = st.slider("กระจายพื้นที่แนวตั้งระหว่างบล็อก (%)", 0, 100, 85, 5, key="smart_spacing")
-    with col2:
-        top_offset = st.slider("ตำแหน่งเริ่มต้นจากด้านบน (%)", 0, 100, 50, 5, key="smart_top_offset")
-    if manual and cut_values != sorted(cut_values):
-        st.warning("จุดแบ่งต้องเรียงจากบนลงล่าง ระบบจะจัดลำดับอัตโนมัติ")
-    pw, ph, _ = _pixel_dimensions(width_cm, height_cm, 65)
-    ratio = min(1, 1150 / pw, 1150 / ph, math.sqrt(1_600_000 / (pw * ph)))
-    preview_size = (max(1, round(pw * ratio)), max(1, round(ph * ratio)))
-    with st.spinner("กำลังจัดบล็อกและสร้างภาพตัวอย่าง..."):
-        before = _safe_contain(source, preview_size, background, color)
-        after = relayout_bands(source, preview_size, cut_values, background, color,
-                               spacing=spacing, top_offset=top_offset)
-        p_before, p_after = prepare_quality_previews(before, after)
-    st.markdown("#### 🔍 พรีวิวลากดู ก่อน–หลังที่จัดใหม่")
-    render_quality_preview(p_before, p_after,
-                           title="ก่อน: คงภาพทั้งแผ่น ↔ หลัง: จัดกลุ่มบล็อกใหม่",
-                           before_label="ก่อน • คงภาพเต็มแผ่น",
-                           after_label="หลัง • จัดบล็อกโดยไม่บีบ/ยืด")
-    st.caption("พรีวิวปรับรูปทรงจากกลุ่มภาพ ไม่ได้ทำให้ข้อความที่อยู่ในบล็อกแก้ไขแยกได้; ตรวจภาพและข้อความก่อนพิมพ์")
-    fmt = st.selectbox("รูปแบบไฟล์", ["PNG", "TIFF"], key="smart_format")
-    cmyk = st.checkbox("TIFF แบบ CMYK เบื้องต้น (ยังไม่ฝัง ICC ของเครื่องพิมพ์)", value=False,
-                       disabled=fmt != "TIFF", key="smart_cmyk")
-    source_digest = hashlib.sha256(source.resize((64, 64), Image.Resampling.BILINEAR).tobytes()).hexdigest()
-    fingerprint = (source_digest, source.width, source.height, width_cm, height_cm, dpi_effective,
-                   tuple(cut_values), background, color, spacing, top_offset, fmt, cmyk)
-    if st.button("🖨️ สร้างไฟล์จัดวางใหม่พร้อมพิมพ์", type="primary", use_container_width=True,
-                 key="smart_make_file"):
-        with st.spinner("กำลังสร้างไฟล์ขนาดจริง..."):
-            target = relayout_bands(source, (wpx, hpx), cut_values, background, color,
-                                    spacing=spacing, top_offset=top_offset)
-            binary = _png_or_tiff(target, fmt, dpi_effective, cmyk)
-            st.session_state["smart_export"] = (fingerprint, binary)
-    if "smart_export" in st.session_state:
-        key, data = st.session_state["smart_export"]
-        if key == fingerprint:
-            st.download_button("⬇️ ดาวน์โหลดป้ายจัดวางใหม่ " + fmt, data=data,
-                               file_name="thanasilp_smart_relayout." + ("tif" if fmt == "TIFF" else "png"),
-                               mime="image/tiff" if fmt == "TIFF" else "image/png", use_container_width=True)
+
+    source_ratio = source.width / source.height
+    target_ratio = width_cm / height_cm
+    if abs(source_ratio / target_ratio - 1) > .025:
+        st.caption(f"อัตราส่วนต้นฉบับ {source_ratio:.3f}:1 และป้ายใหม่ {target_ratio:.3f}:1 ต่างกัน "
+                   "จึงไม่สามารถทั้งคงภาพครบ ไม่มีพื้นที่เสริม และไม่บิดรูป ได้พร้อมกันด้วยการย่อ–ขยายธรรมดา")
+
+    background = st.selectbox(
+        "พื้นหลังสำหรับพื้นที่ที่เพิ่ม",
+        ["ไล่สีจากขอบภาพ", "ฉากหลังเบลอจากภาพต้นฉบับ", "สีพื้นเลือกเอง"],
+        key="smart_background_v2")
+    bg_color = st.color_picker("สีพื้น", "#F1EEE8", key="smart_bg_color_v2",
+                               disabled=background != "สีพื้นเลือกเอง")
+    x1, x2, x3 = st.columns(3)
+    with x1:
+        scale = st.slider("ขนาดส่วนภาพหลัก (%)", 25, 100, 100, 5,
+                          key="smart_scale_v2")
+    with x2:
+        pos_x = st.slider("ตำแหน่งซ้าย–ขวา (%)", 0, 100, 50, 5,
+                          key="smart_pos_x_v2")
+    with x3:
+        pos_y = st.slider("ตำแหน่งบน–ล่าง (%)", 0, 100, 50, 5,
+                          key="smart_pos_y_v2")
+
+    ratio = min(1.0, 1100 / max(1, width_px), 1100 / max(1, height_px),
+                math.sqrt(1_600_000 / max(1, width_px * height_px)))
+    size_preview = (max(1, int(width_px * ratio)), max(1, int(height_px * ratio)))
+    with st.spinner("กำลังสร้างพรีวิวแบบภาพต่อเนื่อง..."):
+        before = _compose_whole_image(
+            source, size_preview, "สีพื้นเลือกเอง", "#F0F1F4", 100, 50, 50)
+        after = _compose_whole_image(
+            source, size_preview, background, bg_color, scale, pos_x, pos_y)
+        before_jpg, after_jpg = prepare_quality_previews(before, after)
+
+    st.markdown("#### 🔍 ลากเปรียบเทียบก่อน–หลัง")
+    render_quality_preview(before_jpg, after_jpg,
+                           title="ภาพต้นฉบับครบทั้งผืน ↔ ภาพจัดลงขนาดใหม่",
+                           before_label="ก่อน • ภาพต้นฉบับครบ",
+                           after_label="หลัง • คงภาพครบ ไม่แยกเป็นแถบ")
+    st.caption("ภาพตัวอย่างใช้ไฟล์ย่อเพื่อดูตำแหน่ง การดาวน์โหลดจะใช้ขนาดพิกเซลที่ระบุด้านบน")
+
+    fmt = st.selectbox("ไฟล์ส่งออก", ["PNG", "TIFF"], key="smart_format_v2")
+    cmyk = st.checkbox("TIFF แบบ CMYK เบื้องต้น (ไม่มีโปรไฟล์ ICC โรงพิมพ์)",
+                       value=False, disabled=fmt != "TIFF", key="smart_cmyk_v2")
+    stamp = hashlib.sha256(source.resize((48, 48), Image.Resampling.BILINEAR).tobytes()).hexdigest()
+    settings = (stamp, width_px, height_px, actual_dpi, background, bg_color,
+                scale, pos_x, pos_y, fmt, cmyk)
+
+    if st.button("🖨️ สร้างไฟล์ภาพครบ ไม่ตัดเป็นแถบ", type="primary",
+                 use_container_width=True, key="smart_make_safe_v2"):
+        with st.spinner("กำลังทำไฟล์พร้อมพิมพ์..."):
+            final = _compose_whole_image(
+                source, (width_px, height_px), background, bg_color, scale, pos_x, pos_y)
+            binary = _make_file(final, fmt, actual_dpi, cmyk)
+            st.session_state["smart_safe_output_v2"] = (settings, binary)
+
+    result = st.session_state.get("smart_safe_output_v2")
+    if result:
+        old_settings, data = result
+        if old_settings == settings:
+            st.download_button(
+                "⬇️ ดาวน์โหลดงาน " + fmt, data=data,
+                file_name="thanasilp_no_cut." + ("tif" if fmt == "TIFF" else "png"),
+                mime="image/tiff" if fmt == "TIFF" else "image/png",
+                use_container_width=True)
         else:
-            st.caption("เปลี่ยนการตั้งค่าแล้ว กรุณากดสร้างไฟล์ใหม่เพื่อให้ตรงกับพรีวิว")
+            st.caption("ค่าปรับเปลี่ยนไปจากไฟล์ล่าสุด กรุณากดสร้างไฟล์ใหม่")
