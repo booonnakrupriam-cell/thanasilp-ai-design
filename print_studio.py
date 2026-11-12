@@ -318,7 +318,8 @@ def _set_resize_150x200_to_100x200():
     st.session_state["studio_resize_source_height_v4"] = 200.0
     st.session_state["studio_resize_width"] = 100.0
     st.session_state["studio_resize_height"] = 200.0
-    st.session_state["studio_resize_framing_v2"] = "คงภาพครบ • เติมฉากหลังเบลอ"
+    st.session_state["studio_resize_framing_v2"] = "คงสัดส่วนภาพเดิม (ไม่ยืดตัวหนังสือ)"
+    st.session_state["studio_resize_manual_source_v4"] = True
     st.session_state["studio_resize_align_x_v4"] = 50
     st.session_state["studio_resize_align_y_v4"] = 50
 
@@ -401,14 +402,18 @@ def _resize_preset_preview(image, preset):
     st.button("✅ ลองตัวอย่าง 150 × 200 → 100 × 200 ซม.",
               key="studio_resize_example_ratio_v4", use_container_width=True,
               on_click=_set_resize_150x200_to_100x200)
-    origin_col1, origin_col2 = st.columns(2)
-    with origin_col1:
-        source_width_cm = st.number_input("กว้างต้นฉบับ (ซม.)", 1.0, 600.0, 150.0, 1.0,
-                                         key="studio_resize_source_width_v4")
-    with origin_col2:
-        source_height_cm = st.number_input("สูงต้นฉบับ (ซม.)", 1.0, 600.0, 200.0, 1.0,
-                                          key="studio_resize_source_height_v4")
-    st.caption("ขนาดต้นฉบับใช้ประกอบการเปรียบเทียบอัตราส่วน ระบบวางภาพโดยยึดสัดส่วนพิกเซลจริงของไฟล์เพื่อป้องกันการบิดรูป")
+    check_original = st.checkbox("ระบุขนาดป้ายต้นฉบับ (ไม่บังคับ)",
+                                 value=False, key="studio_resize_manual_source_v4")
+    source_width_cm = source_height_cm = None
+    if check_original:
+        origin_col1, origin_col2 = st.columns(2)
+        with origin_col1:
+            source_width_cm = st.number_input("กว้างต้นฉบับ (ซม.)", 1.0, 600.0, 150.0, 1.0,
+                                             key="studio_resize_source_width_v4")
+        with origin_col2:
+            source_height_cm = st.number_input("สูงต้นฉบับ (ซม.)", 1.0, 600.0, 200.0, 1.0,
+                                              key="studio_resize_source_height_v4")
+    st.caption("อัตราส่วนที่ใช้วางจริงอ้างอิงพิกเซลจากไฟล์ต้นฉบับ ไม่บีบหรือยืดตามขนาดที่กรอก")
 
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -471,9 +476,8 @@ def _resize_preset_preview(image, preset):
 
     if image is not None:
         actual_ratio = image.width / max(1, image.height)
-        declared_ratio = source_width_cm / source_height_cm
         target_ratio = width_cm / height_cm
-        if abs(actual_ratio / declared_ratio - 1) > .03:
+        if check_original and abs(actual_ratio / (source_width_cm / source_height_cm) - 1) > .03:
             st.warning(
                 "ขนาดต้นฉบับที่กรอกไม่ตรงกับอัตราส่วนพิกเซลของไฟล์ที่อัปโหลด "
                 "ระบบจะรักษาสัดส่วนตามภาพจริง ไม่ยืดตามตัวเลขที่กรอก"
