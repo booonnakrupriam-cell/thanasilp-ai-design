@@ -75,6 +75,18 @@ def _compose_whole_image(source: Image.Image, size: tuple[int, int],
     return canvas
 
 
+def _compose_full_bleed(source: Image.Image, size: tuple[int, int],
+                        x: int = 50, y: int = 50):
+    """Cover the entire canvas by isotropic scaling and cropping only.
+
+    Preserves circle/face/glyph proportions but may cut away edge content.
+    """
+    result = ImageOps.fit(
+        source.convert("RGBA"), size, method=Image.Resampling.LANCZOS,
+        centering=(max(0, min(100, x)) / 100, max(0, min(100, y)) / 100))
+    return result
+
+
 def _make_file(image: Image.Image, fmt: str, dpi: float, cmyk: bool):
     result = BytesIO()
     if fmt == "TIFF":
@@ -141,7 +153,8 @@ def render_smart_relayout(source: Image.Image | None):
     mode = st.radio(
         "เลือกวิธีจัดภาพใหม่",
         [
-            "🖼️ รักษาภาพครบทั้งผืน • ไม่ตัด ไม่ยืด (สร้างไฟล์บนเว็บ)",
+            "🖼️ รักษาภาพครบทั้งผืน • ไม่ตัด ไม่ยืด (มีพื้นหลังเสริม)",
+            "📐 เต็มขอบ ไม่มีพื้นที่เสริม • ครอปขอบภาพบางส่วน",
             "✨ ให้ AI ออกแบบใหม่ทั้งภาพ • จัดองค์ประกอบใหม่จริง",
         ],
         key="smart_method_safe_v2",
@@ -165,9 +178,15 @@ def render_smart_relayout(source: Image.Image | None):
         _render_ai_rebuild(width_cm, height_cm)
         return
 
-    st.warning("โหมดนี้รักษาต้นฉบับทุกส่วน **เป็นภาพเดียวต่อเนื่อง** ไม่มีเส้นแบ่งและไม่มีส่วนหาย "
-               "แต่เมื่อเปลี่ยนอัตราส่วน จะต้องมีพื้นที่เสริมด้านข้างหรือบน–ล่าง "
-               "ถ้าต้องการให้เต็มพื้นที่โดยจัดคน/รูป/ตัวหนังสือใหม่อย่างอิสระ ให้เลือกโหมด AI")
+    full_bleed = mode.startswith("📐")
+    if full_bleed:
+        st.warning("โหมดเต็มขอบ: ไม่มีแถบขาวหรือเทา และไม่บีบวงกลม/ใบหน้า "
+                   "**แต่จะครอปขอบบางส่วน** เพื่อให้ภาพเต็มพื้นที่เมื่ออัตราส่วนต่างกัน "
+                   "โปรดตรวจว่ารูปคน ตัวหนังสือ และโลโก้ไม่ถูกครอปก่อนพิมพ์")
+    else:
+        st.info("โหมดคงภาพครบ: ไม่ตัดหรือบิดรูปทรงเดิม "
+                "แต่เมื่ออัตราส่วนต่างกัน จะต้องมีพื้นหลังเสริมด้านข้างหรือบน–ล่าง "
+                "ถ้าต้องการเต็มพื้นที่และรักษาทุกอย่างครบ ให้เลือกโหมด AI")
     if source is None:
         st.info("อัปโหลดภาพ **ต้นฉบับก่อนถูกแบ่งเป็นแถบ** ในช่องด้านบนเพื่อใช้งาน")
         return
@@ -181,22 +200,33 @@ def render_smart_relayout(source: Image.Image | None):
         st.caption(f"อัตราส่วนต้นฉบับ {source_ratio:.3f}:1 และป้ายใหม่ {target_ratio:.3f}:1 ต่างกัน "
                    "จึงไม่สามารถทั้งคงภาพครบ ไม่มีพื้นที่เสริม และไม่บิดรูป ได้พร้อมกันด้วยการย่อ–ขยายธรรมดา")
 
-    background = st.selectbox(
-        "พื้นหลังสำหรับพื้นที่ที่เพิ่ม",
-        ["ไล่สีจากขอบภาพ", "ฉากหลังเบลอจากภาพต้นฉบับ", "สีพื้นเลือกเอง"],
-        key="smart_background_v2")
-    bg_color = st.color_picker("สีพื้น", "#F1EEE8", key="smart_bg_color_v2",
-                               disabled=background != "สีพื้นเลือกเอง")
-    x1, x2, x3 = st.columns(3)
-    with x1:
-        scale = st.slider("ขนาดส่วนภาพหลัก (%)", 25, 100, 100, 5,
-                          key="smart_scale_v2")
-    with x2:
-        pos_x = st.slider("ตำแหน่งซ้าย–ขวา (%)", 0, 100, 50, 5,
-                          key="smart_pos_x_v2")
-    with x3:
-        pos_y = st.slider("ตำแหน่งบน–ล่าง (%)", 0, 100, 50, 5,
-                          key="smart_pos_y_v2")
+    background, bg_color, scale = "ไล่สีจากขอบภาพ", "#F1EEE8", 100
+    if full_bleed:
+        st.caption("เลื่อนจุดครอปเพื่อให้สิ่งสำคัญอยู่กลางงาน วัตถุทุกชิ้นยังคงสัดส่วนเดิม")
+        x1, x2 = st.columns(2)
+        with x1:
+            pos_x = st.slider("จุดครอปซ้าย–ขวา (%)", 0, 100, 50, 5,
+                              key="smart_crop_pos_x_v3")
+        with x2:
+            pos_y = st.slider("จุดครอปบน–ล่าง (%)", 0, 100, 50, 5,
+                              key="smart_crop_pos_y_v3")
+    else:
+        background = st.selectbox(
+            "พื้นหลังสำหรับพื้นที่ที่เพิ่ม",
+            ["ไล่สีจากขอบภาพ", "ฉากหลังเบลอจากภาพต้นฉบับ", "สีพื้นเลือกเอง"],
+            key="smart_background_v2")
+        bg_color = st.color_picker("สีพื้น", "#F1EEE8", key="smart_bg_color_v2",
+                                   disabled=background != "สีพื้นเลือกเอง")
+        x1, x2, x3 = st.columns(3)
+        with x1:
+            scale = st.slider("ขนาดส่วนภาพหลัก (%)", 25, 100, 100, 5,
+                              key="smart_scale_v2")
+        with x2:
+            pos_x = st.slider("ตำแหน่งซ้าย–ขวา (%)", 0, 100, 50, 5,
+                              key="smart_pos_x_v2")
+        with x3:
+            pos_y = st.slider("ตำแหน่งบน–ล่าง (%)", 0, 100, 50, 5,
+                              key="smart_pos_y_v2")
 
     ratio = min(1.0, 1100 / max(1, width_px), 1100 / max(1, height_px),
                 math.sqrt(1_600_000 / max(1, width_px * height_px)))
@@ -204,29 +234,35 @@ def render_smart_relayout(source: Image.Image | None):
     with st.spinner("กำลังสร้างพรีวิวแบบภาพต่อเนื่อง..."):
         before = _compose_whole_image(
             source, size_preview, "สีพื้นเลือกเอง", "#F0F1F4", 100, 50, 50)
-        after = _compose_whole_image(
-            source, size_preview, background, bg_color, scale, pos_x, pos_y)
+        after = (_compose_full_bleed(source, size_preview, pos_x, pos_y)
+                 if full_bleed else
+                 _compose_whole_image(source, size_preview, background, bg_color,
+                                      scale, pos_x, pos_y))
         before_jpg, after_jpg = prepare_quality_previews(before, after)
 
     st.markdown("#### 🔍 ลากเปรียบเทียบก่อน–หลัง")
     render_quality_preview(before_jpg, after_jpg,
                            title="ภาพต้นฉบับครบทั้งผืน ↔ ภาพจัดลงขนาดใหม่",
                            before_label="ก่อน • ภาพต้นฉบับครบ",
-                           after_label="หลัง • คงภาพครบ ไม่แยกเป็นแถบ")
+                           after_label=("หลัง • เต็มขอบแบบครอป" if full_bleed
+                                        else "หลัง • คงภาพครบ ไม่แยกเป็นแถบ"))
     st.caption("ภาพตัวอย่างใช้ไฟล์ย่อเพื่อดูตำแหน่ง การดาวน์โหลดจะใช้ขนาดพิกเซลที่ระบุด้านบน")
 
     fmt = st.selectbox("ไฟล์ส่งออก", ["PNG", "TIFF"], key="smart_format_v2")
     cmyk = st.checkbox("TIFF แบบ CMYK เบื้องต้น (ไม่มีโปรไฟล์ ICC โรงพิมพ์)",
                        value=False, disabled=fmt != "TIFF", key="smart_cmyk_v2")
     stamp = hashlib.sha256(source.resize((48, 48), Image.Resampling.BILINEAR).tobytes()).hexdigest()
-    settings = (stamp, width_px, height_px, actual_dpi, background, bg_color,
-                scale, pos_x, pos_y, fmt, cmyk)
+    settings = (stamp, width_px, height_px, actual_dpi, full_bleed,
+                background, bg_color, scale, pos_x, pos_y, fmt, cmyk)
 
-    if st.button("🖨️ สร้างไฟล์ภาพครบ ไม่ตัดเป็นแถบ", type="primary",
-                 use_container_width=True, key="smart_make_safe_v2"):
+    if st.button(("🖨️ สร้างไฟล์เต็มขอบ (มีครอป)" if full_bleed
+                  else "🖨️ สร้างไฟล์ภาพครบ ไม่ตัดเป็นแถบ"),
+                 type="primary", use_container_width=True, key="smart_make_safe_v2"):
         with st.spinner("กำลังทำไฟล์พร้อมพิมพ์..."):
-            final = _compose_whole_image(
-                source, (width_px, height_px), background, bg_color, scale, pos_x, pos_y)
+            final = (_compose_full_bleed(source, (width_px, height_px), pos_x, pos_y)
+                     if full_bleed else
+                     _compose_whole_image(source, (width_px, height_px),
+                                          background, bg_color, scale, pos_x, pos_y))
             binary = _make_file(final, fmt, actual_dpi, cmyk)
             st.session_state["smart_safe_output_v2"] = (settings, binary)
 
@@ -236,7 +272,8 @@ def render_smart_relayout(source: Image.Image | None):
         if old_settings == settings:
             st.download_button(
                 "⬇️ ดาวน์โหลดงาน " + fmt, data=data,
-                file_name="thanasilp_no_cut." + ("tif" if fmt == "TIFF" else "png"),
+                file_name=("thanasilp_full_bleed" if full_bleed else "thanasilp_no_cut")
+                          + ("." + ("tif" if fmt == "TIFF" else "png")),
                 mime="image/tiff" if fmt == "TIFF" else "image/png",
                 use_container_width=True)
         else:
