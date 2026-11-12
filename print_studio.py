@@ -341,7 +341,13 @@ def _resize_preset_preview(image, preset):
     """Small real preview, not an unrelated decorative illustration."""
     mode, strength, smooth, _ = RESIZE_PRESETS[preset]
     thumb = image.copy()
-    thumb.thdef _tool_resize():
+    thumb.thumbnail((440, 205), Image.Resampling.LANCZOS)
+    if thumb.mode != "RGBA":
+        thumb = thumb.convert("RGBA")
+    return _apply_print_edge_mode(thumb, mode, strength, smooth)
+
+
+def _tool_resize():
     st.markdown("#### 1. อัพสเกลภาพ / ปรับเส้นคมสำหรับพิมพ์ + ลากก่อน–หลัง")
     st.caption("อัปโหลดรูป → เลือกแบบปรับคม → ลากเส้น ↔ ดูก่อน–หลังจริง → สร้างไฟล์พร้อมพิมพ์ ไม่ต้องออกจากโหมดนี้")
     up = st.file_uploader("อัปโหลดภาพสำหรับขยาย", type=["jpg", "jpeg", "png", "tif", "tiff"],
