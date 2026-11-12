@@ -15,11 +15,9 @@ if st.query_params.get("studio") == "resize":
         _tool_resize()
     except Exception:
         st.warning("เกิดปัญหาเปิดระบบอัพสเกลหลัก กำลังแสดงเครื่องมือเปรียบเทียบสำรอง กรุณาอย่าใช้พรีวิวสำรองแทนไฟล์พิมพ์")
-        from print_preview import make_quality_demo_previews, render_quality_preview, render_quality_from_images
+        from print_preview import render_quality_from_images
         from PIL import Image, ImageOps, ImageEnhance
         from io import BytesIO
-        demo_before, demo_after = make_quality_demo_previews()
-        render_quality_preview(demo_before, demo_after, title="ทดลองลาก ↔ ก่อน–หลัง")
         image_upload = st.file_uploader("อัปโหลดภาพสำหรับดูความคมชัด", type=["jpg", "jpeg", "png"], key="resize_fallback_upload")
         if image_upload is not None:
             with Image.open(BytesIO(image_upload.getvalue())) as source:
@@ -40,13 +38,10 @@ if st.query_params.get("studio") == "compare":
         _tool_quality_comparison()
     except Exception:
         # Independent comparison fallback, no advanced-editor dependencies.
-        from print_preview import make_quality_demo_previews, render_quality_preview
         from PIL import Image, ImageOps
         from io import BytesIO
 
-        st.warning("โหมดสตูดิโอกำลังปรับปรุง แต่ยังใช้พรีวิวลากเส้นก่อน–หลังได้")
-        b, a = make_quality_demo_previews()
-        render_quality_preview(b, a, title="ทดลองลากเส้น ↔ ก่อน–หลัง ได้ทันที")
+        st.warning("โหมดสตูดิโอกำลังปรับปรุง แต่ยังใช้พรีวิวกับภาพจริงสองไฟล์ได้")
         left, right = st.columns(2)
         with left:
             source_before = st.file_uploader("ก่อนแก้", type=["png","jpg","jpeg"], key="fallback_before")
