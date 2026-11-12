@@ -487,7 +487,27 @@ def build_direct_prompt(mode):
 # Use a visible selection to control which tab's prompt is sent; Streamlit tabs do not expose active tab to Python.
 st.markdown('#### เลือกหมวดคำสั่งที่จะส่ง')
 selected_prompt_type=st.radio('เลือกคำสั่งที่ต้องการใช้งาน',['ออกแบบป้าย','แต่งภาพบุคคล','ออกแบบกราฟิก','เสื้อพิมพ์ลาย','รูปนูน 2.5D / 3D','เครื่องมือพิเศษ'],horizontal=True,label_visibility='collapsed',key='selected_prompt_type')
+# ข้อกำหนดฟอนต์และขอบข้อความใช้ร่วมกันทุกหมวดของระบบสร้างคำสั่ง
+with st.expander('🔤 ฟอนต์และขอบตัวอักษร — ใช้กับทุกหมวดที่มีข้อความ', expanded=False):
+    font_style_global=st.selectbox('ลักษณะฟอนต์',[
+        'ตามประเภทงานอัตโนมัติ','ฟอนต์ไทยทางการมีหัว','ฟอนต์อ้วนอ่านไกล',
+        'ฟอนต์ไทยลายประดับ','ฟอนต์โมเดิร์น','รักษาฟอนต์จากภาพต้นฉบับ'
+    ],key='global_font_style')
+    font_outline_global=st.selectbox('ความหนาขอบตัวอักษร',[
+        'ตามความเหมาะสม','ไม่มีขอบ','ขอบบาง','ขอบปานกลาง','ขอบหนา'
+    ],key='global_font_outline')
+    st.caption('ขอบต้องเดินตามเส้นโค้งจริงของตัวอักษรแต่ละฟอนต์ ไม่วาดขอบเป็นเหลี่ยมหรือบิดรูปทรง')
+
 prompt=sign_prompt if selected_prompt_type=='ออกแบบป้าย' else build_photo_prompt() if selected_prompt_type=='แต่งภาพบุคคล' else build_graphic_prompt() if selected_prompt_type=='ออกแบบกราฟิก' else build_direct_prompt(selected_prompt_type) if selected_prompt_type in ('เสื้อพิมพ์ลาย','รูปนูน 2.5D / 3D') else build_special_prompt()
+font_edge_rule=(
+    'ฟอนต์และขอบตัวอักษร: '+font_style_global+'; '+font_outline_global+
+    '; ให้เส้นขอบโค้งตามแนวเส้นอักษรจริงทุกตัวอย่างสม่ำเสมอ (true glyph contour / smooth stroke), '
+    'ไม่ยืด ไม่เบี้ยว ไม่ตัดมุม ไม่บิดรูปร่างฟอนต์หรือสระวรรณยุกต์ '
+    'รักษาระยะขอบที่สมดุลทั้งเส้นตรงและส่วนโค้ง อ่านชัดระดับงานพิมพ์'
+)
+prompt=prompt+'\n'+font_edge_rule
+
+
 
 section_title('7. ส่งคำสั่งไปสร้างภาพ')
 st.caption('คำสั่งของคุณอยู่ในช่องด้านล่าง สามารถคลิกแล้วกด Ctrl+A และ Ctrl+C เพื่อคัดลอกได้ทันที')
