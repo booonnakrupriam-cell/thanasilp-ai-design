@@ -8,13 +8,26 @@ st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠
 
 # Direct entry to resize/DPI, sharpening presets and an immediately visible before/after slider.
 if st.query_params.get("studio") == "resize":
-    st.title("🔎 ธนศิลป์ • ขยายภาพ / ปรับความคม / ลากเปรียบเทียบ")
+    st.title("🔎 ธนศิลป์ • อัพสเกลภาพ / ปรับความคม / ลากก่อน–หลัง")
     st.link_button("🏠 กลับหน้าเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
     try:
         from print_studio import _tool_resize
         _tool_resize()
     except Exception:
-        st.error("ไม่สามารถเปิดเครื่องมือขยายภาพได้ชั่วคราว กรุณาลองจากแท็บสตูดิโองานพิมพ์")
+        st.warning("เกิดปัญหาเปิดระบบอัพสเกลหลัก กำลังแสดงเครื่องมือเปรียบเทียบสำรอง กรุณาอย่าใช้พรีวิวสำรองแทนไฟล์พิมพ์")
+        from print_preview import make_quality_demo_previews, render_quality_preview, render_quality_from_images
+        from PIL import Image, ImageOps, ImageEnhance
+        from io import BytesIO
+        demo_before, demo_after = make_quality_demo_previews()
+        render_quality_preview(demo_before, demo_after, title="ทดลองลาก ↔ ก่อน–หลัง")
+        image_upload = st.file_uploader("อัปโหลดภาพสำหรับดูความคมชัด", type=["jpg", "jpeg", "png"], key="resize_fallback_upload")
+        if image_upload is not None:
+            with Image.open(BytesIO(image_upload.getvalue())) as source:
+                im = ImageOps.exif_transpose(source).convert("RGB")
+                im.thumbnail((1400, 900))
+                sharp = ImageEnhance.Sharpness(im).enhance(2.0)
+                render_quality_from_images(im, sharp, title="ลากดูการปรับคมเบื้องต้นบนภาพของคุณ")
+        st.caption("หน้าเครื่องมือสำรองเป็นตัวดูภาพเท่านั้น หากยังพบหน้านี้ กรุณาส่งภาพหน้าจอข้อผิดพลาดมา")
     st.stop()
 
 # Only load the selected tool when required; a broken optional editor must
