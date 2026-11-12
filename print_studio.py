@@ -349,7 +349,7 @@ def _resize_preset_preview(image, preset):
 
 def _tool_resize():
     st.markdown("#### 1. เปลี่ยนขนาด / อัพสเกล / จัดองค์ประกอบงานพิมพ์")
-    st.caption("เลือกได้ทั้งจัดเลย์เอาต์ใหม่จริงโดยไม่บีบวงกลม/คน/ฟอนต์ หรือขยายภาพและปรับคมแบบเดิม")
+    st.caption("เลือกคงภาพครบไม่แยกเป็นแถบ หรือให้ AI ออกแบบเลย์เอาต์ใหม่ทั้งภาพ และยังใช้เครื่องมืออัพสเกลแบบเดิมได้")
     up = st.file_uploader("อัปโหลดภาพสำหรับขยาย", type=["jpg", "jpeg", "png", "tif", "tiff"],
                           key="studio_resize_upload")
 
@@ -367,7 +367,7 @@ def _tool_resize():
         key="studio_resize_workflow_v5",
         horizontal=False,
     )
-    if resize_workflow.startswith("🧩"):
+    if resize_workflow.startswith("🛡️"):
         from smart_relayout import render_smart_relayout
         render_smart_relayout(image)
         return
