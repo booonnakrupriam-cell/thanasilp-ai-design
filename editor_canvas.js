@@ -279,12 +279,7 @@ export default function (component) {
     downloadBlob(new Blob([JSON.stringify(project)],{type:"application/json"}),"thanasilp_project.json");
     notify("ดาวน์โหลดไฟล์งานแก้ไขแล้ว สามารถกลับมาเปิดทำต่อได้");
   };
-  $("te-load").onchange=async e=>{
-    const file=e.target.files[0];
-    if(!file)return;
-    if(file.size>35*1024*1024){notify("ไฟล์โปรเจกต์ใหญ่เกิน 35 MB",true);return;}
-    try{
-      const obj=JSON.parse(await file.text());
+  async function openProject(obj){
       if(obj.version!==1 || typeof obj.image!=="string" || !/^data:image\/(png|jpeg|webp);base64,/i.test(obj.image))throw Error("ไม่ใช่โปรเจกต์ภาพที่รองรับ");
       if(!Array.isArray(obj.layers)||obj.layers.length>500)throw Error("จำนวนชั้นข้อมูลเกินกำหนด");
       const safe=obj.layers.map(o=>{
@@ -314,7 +309,13 @@ export default function (component) {
       for(const k of ["bright","saturate","contrast"])if(colors[k]!=null)$("te-"+k).value=clamp(Number(colors[k])||100,40,200);
       if(obj.print){$("te-wcm").value=Number(obj.print.width)||200;$("te-hcm").value=Number(obj.print.height)||100;}
       loadImage(obj.image);notify("เปิดโปรเจกต์แล้ว พร้อมแก้ไขต่อ");
-    }catch(err){notify("เปิดไฟล์ไม่ได้: "+err.message,true);}
+  }
+  $("te-load").onchange=async e=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    if(file.size>35*1024*1024){notify("ไฟล์โปรเจกต์ใหญ่เกิน 35 MB",true);return;}
+    try{await openProject(JSON.parse(await file.text()));}
+    catch(err){notify("เปิดไฟล์ไม่ได้: "+err.message,true);}
     e.target.value="";
   };
   function loadImage(src){
@@ -332,7 +333,12 @@ export default function (component) {
   }
   $("te-font").querySelector('option[value="ThanasilpCustom"]').disabled=true;
   document.fonts.ready.then(render).catch(()=>{});
-  loadImage(imageData);setMode("select");
+  if(component.data.project){
+    openProject(component.data.project).catch(err=>notify("เปิดโปรเจกต์ไม่ได้: "+err.message,true));
+  } else {
+    loadImage(imageData);
+  }
+  setMode("select");
   return ()=>{
     destroyed=true;
     document.removeEventListener("keydown",onKeys);
