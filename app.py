@@ -4,6 +4,8 @@ from urllib.parse import quote
 import streamlit as st
 import streamlit.components.v1 as components
 
+from print_studio import render_print_studio
+
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
 st.markdown("""
@@ -130,7 +132,7 @@ WORK = ['ออกแบบป้ายใหม่','ฟื้นฟูภา�
 TYPES = ['ร้านค้า / อาหาร / บริการ','งานบุญ / กฐิน / วัด','ราชการ / โรงเรียน / โครงการ','งานศพ / อาลัย','เกษียณ / แสดงความยินดี','งานวิชาการ / ประชาสัมพันธ์','ป้ายชื่อหน่วยงาน','อื่น ๆ']
 STYLES = ['เรียบหรู มืออาชีพ','สุภาพ เป็นทางการ','โมเดิร์น ทันสมัย','ลายไทยประยุกต์','มินิมอล สะอาดตา','สีสันสดใส โดดเด่น','ตัวหนังสือสามมิติ','ตามภาพตัวอย่าง']
 
-tab_sign,tab_photo,tab_graphic,tab_shirt,tab_relief,tab_extra=st.tabs(['🪧 ออกแบบป้าย','📸 แต่งภาพบุคคล','🎨 ออกแบบกราฟิก','👕 เสื้อพิมพ์ลาย','🗿 รูปนูน 2.5D / 3D','🧰 เครื่องมือพิเศษ'])
+tab_sign,tab_photo,tab_graphic,tab_shirt,tab_relief,tab_print_studio,tab_extra=st.tabs(['🪧 ออกแบบป้าย','📸 แต่งภาพบุคคล','🎨 ออกแบบกราฟิก','👕 เสื้อพิมพ์ลาย','🗿 รูปนูน 2.5D / 3D','🖨️ สตูดิโองานพิมพ์','🧰 เครื่องมือพิเศษ'])
 
 with tab_sign:
     st.markdown('<div class="th-section-h">✦ สร้างคำสั่งออกแบบป้ายด้วย AI</div>',unsafe_allow_html=True)
@@ -195,6 +197,9 @@ with tab_graphic:
     if graphic_task=='ออกแบบกรอบ QR Code':
         st.info('เพื่อให้สแกนได้จริง ให้นำ QR Code ที่สร้างจากลิงก์จริงมาใส่ในกรอบที่ออกแบบ ไม่ใช้ QR Code ที่ AI วาดขึ้น')
 
+
+with tab_print_studio:
+    render_print_studio()
 
 with tab_extra:
     st.markdown('### 🧰 เครื่องมือพิเศษสำหรับงานออกแบบ')
