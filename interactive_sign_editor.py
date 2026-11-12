@@ -233,6 +233,7 @@ def render_interactive_editor():
         st.caption(f"ขนาดภาพสำหรับแก้ไข {im.width:,} × {im.height:,} px")
     # Passing the image as data rather than raw HTML avoids embedding any user-controlled markup.
     EDITOR(data={"image": src}, key="studio_interactive_editor_v1")
+    st.warning("ก่อนเปลี่ยนโหมดหรือรีเฟรชหน้าเว็บ กรุณากด 💾 บันทึกไฟล์แก้ไข .json เพื่อเก็บชั้นข้อความที่แก้ไว้")
     st.caption(
         "เวอร์ชันนี้แก้ข้อความใหม่เป็นชั้นภาพจริงและส่งออก PNG ได้ "
         "แต่ยังไม่ตรวจหาข้อความเดิมด้วย OCR อัตโนมัติ และยังไม่ลบพื้นหลังลายละเอียดด้วย AI"
