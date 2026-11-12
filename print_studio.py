@@ -213,6 +213,12 @@ def _apply_print_edge_mode(image, mode, strength, curve_smooth):
     rgb = image.convert("RGB")
     if mode == "🔤 ตัวหนังสือและลายเส้นคม":
         radius, percent, threshold = 0.95, int(100 + strength * 88), 2
+    elif mode == "🧩 โลโก้และเส้นเล็กคม":
+        radius, percent, threshold = 0.7, int(110 + strength * 90), 1
+    elif mode == "🎨 สีสดงานป้าย":
+        rgb = ImageEnhance.Color(rgb).enhance(1.08 + strength * .11)
+        rgb = ImageEnhance.Contrast(rgb).enhance(1.02 + strength * .05)
+        radius, percent, threshold = 1.0, int(65 + strength * 65), 2
     elif mode == "🌀 ส่วนโค้งฟอนต์เนียน คมขอบ":
         # Very light antialias-like smoothing BEFORE edge emphasis.
         if curve_smooth:
@@ -241,11 +247,79 @@ def _live_resize_comparison(image, target_size, framing, mode, strength, smooth)
     return prepare_quality_previews(before, after)
 
 
+# รูปแบบการปรับคมที่ผู้ใช้เลือกจากภาพตัวอย่าง
+RESIZE_PRESETS = {
+    "🪧 ป้ายตัวหนังสือคม": (
+        "🔤 ตัวหนังสือและลายเส้นคม", .9, 0,
+        "เพิ่มความคมขอบตัวใหญ่และเส้นป้าย"),
+    "🌀 ฟอนต์โค้งเนียน": (
+        "🌀 ส่วนโค้งฟอนต์เนียน คมขอบ", .85, 2,
+        "ลดรอยหยักบริเวณส่วนโค้ง โดยไม่ยืดรูปทรง"),
+    "🧩 โลโก้ / เส้นเล็ก": (
+        "🧩 โลโก้และเส้นเล็กคม", 1.0, 0,
+        "เน้นเส้นย่อย ขอบโลโก้ และลายละเอียด"),
+    "📷 ภาพบุคคลธรรมชาติ": (
+        "📷 ความคมชัดธรรมชาติ", .45, 0,
+        "ปรับภาพคนอย่างนุ่มนวล ไม่เร่งขอบมาก"),
+    "🎨 สีสดงานป้าย": (
+        "🎨 สีสดงานป้าย", .55, 0,
+        "เพิ่มความสดของสีและคมชัดพอเหมาะ"),
+    "⚪ รักษาภาพต้นฉบับ": (
+        "ไม่ปรับความคม", 0.0, 0,
+        "ขยายด้วย LANCZOS ไม่เร่งสีและขอบ"),
+}
+
+
+def _set_resize_preset(name):
+    mode, strength, smooth, _ = RESIZE_PRESETS[name]
+    st.session_state["studio_resize_preset_v3"] = name
+    st.session_state["studio_resize_edge_mode_v2"] = mode
+    st.session_state["studio_resize_edge_strength_v2"] = strength
+    st.session_state["studio_resize_curve_v2"] = smooth
+
+
+def _resize_preset_preview(image, preset):
+    """Small real preview, not an unrelated decorative illustration."""
+    mode, strength, smooth, _ = RESIZE_PRESETS[preset]
+    thumb = image.copy()
+    thumb.thumbnail((440, 205), Image.Resampling.LANCZOS)
+    if thumb.mode != "RGBA":
+        thumb = thumb.convert("RGBA")
+    return _apply_print_edge_mode(thumb, mode, strength, smooth)
+
+
 def _tool_resize():
     st.markdown("#### 1. ขยายภาพ / DPI + ลากเทียบความคมชัดก่อน–หลัง")
     st.caption("อัปโหลดภาพแล้วเห็นเส้นลากก่อน–หลังทันทีในหน้านี้ พร้อมโหมดปรับคมตัวอักษร เส้นขอบ และส่วนโค้ง")
     up = st.file_uploader("อัปโหลดภาพสำหรับขยาย", type=["jpg", "jpeg", "png", "tif", "tiff"],
                           key="studio_resize_upload")
+
+    image = _open_image(up) if up is not None else None
+    st.markdown("#### 🎨 เลือกรูปแบบเพิ่มความคมจากตัวอย่าง")
+    st.caption("เลือกรูปแบบที่ต้องการด้วยปุ่มใต้ภาพ โปรแกรมจะตั้งโหมด ความคม และส่วนโค้งให้ทันที และยังปรับละเอียดเองได้ด้านล่าง")
+    if "studio_resize_preset_v3" not in st.session_state:
+        _set_resize_preset("🪧 ป้ายตัวหนังสือคม")
+    preset_src = image
+    if preset_src is None:
+        _, demo_jpg = make_quality_demo_previews()
+        preset_src = Image.open(BytesIO(demo_jpg)).convert("RGBA")
+    all_presets = list(RESIZE_PRESETS)
+    for start_index in range(0, len(all_presets), 2):
+        preset_cols = st.columns(2)
+        for j, preset_name in enumerate(all_presets[start_index:start_index+2]):
+            with preset_cols[j]:
+                with st.container(border=True):
+                    st.markdown("**" + preset_name + "**")
+                    st.image(_resize_preset_preview(preset_src, preset_name),
+                             use_container_width=True)
+                    st.caption(RESIZE_PRESETS[preset_name][3])
+                    active = st.session_state.get("studio_resize_preset_v3") == preset_name
+                    st.button(
+                        "✅ เลือกอยู่" if active else "เลือกแบบนี้",
+                        key="studio_resize_choose_preset_" + str(start_index + j),
+                        disabled=active, use_container_width=True,
+                        on_click=_set_resize_preset, args=(preset_name,))
+    st.caption("รูปตัวอย่างนี้ใช้ภาพที่อัปโหลด หรือใช้ภาพสาธิตถ้ายังไม่อัปโหลด")
 
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -261,7 +335,9 @@ def _tool_resize():
         mode = st.selectbox("เลือกรูปแบบเพิ่มความคม", [
             "🔤 ตัวหนังสือและลายเส้นคม",
             "🌀 ส่วนโค้งฟอนต์เนียน คมขอบ",
+            "🧩 โลโก้และเส้นเล็กคม",
             "📷 ความคมชัดธรรมชาติ",
+            "🎨 สีสดงานป้าย",
             "ไม่ปรับความคม",
         ], key="studio_resize_edge_mode_v2")
         sharpen = st.slider("เพิ่มความคมชัด", 0.0, 2.0, 0.6, 0.1,
@@ -289,7 +365,6 @@ def _tool_resize():
         st.warning("ขนาดงานเกินกำลังประมวลผลของเว็บ ระบบลดจำนวนพิกเซล/DPI เพื่อป้องกันเว็บค้าง")
     st.caption("ฟอนต์ที่เป็นภาพพิกเซลสามารถปรับขอบให้ดูเรียบขึ้นได้ แต่ไม่ได้กลายเป็นเวกเตอร์หรือแก้คำในภาพด้วยฟอนต์จริง")
 
-    image = _open_image(up) if up is not None else None
     st.markdown("#### 🔍 พรีวิวก่อน–หลังแบบลากเส้นจริง")
     if image is not None:
         st.caption("👇 **ลากปุ่ม ↔ ที่เส้นขาวกลางภาพ** เพื่อเทียบภาพต้นฉบับกับโหมดปรับคมที่เลือก ปรับตัวเลือกด้านบนแล้วดูผลใหม่ได้ทันที")
