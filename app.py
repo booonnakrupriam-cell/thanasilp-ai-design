@@ -21,6 +21,9 @@ if st.query_params.get("studio") == "smart":
         )
         source_image = None
         if smart_upload is not None:
+            if smart_upload.name.lower().startswith("thanasilp_smart_relayout"):
+                st.warning("ไฟล์นี้ดูเหมือนผลลัพธ์จัดบล็อกเวอร์ชันเก่า ซึ่งอาจมีรอยตัดเป็นแถบติดอยู่ในภาพแล้ว "
+                           "กรุณาอัปโหลดไฟล์ต้นฉบับก่อนแก้แทน เพราะส่วนที่ถูกตัดหายไปไม่สามารถกู้คืนด้วยการย่อ–ขยายธรรมดา")
             if smart_upload.size > 30 * 1024 * 1024:
                 st.error("ไฟล์ใหญ่เกิน 30 MB กรุณาลดขนาดไฟล์")
             else:
