@@ -6,6 +6,17 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
+# Direct entry to resize/DPI, sharpening presets and an immediately visible before/after slider.
+if st.query_params.get("studio") == "resize":
+    st.title("🔎 ธนศิลป์ • ขยายภาพ / ปรับความคม / ลากเปรียบเทียบ")
+    st.link_button("🏠 กลับหน้าเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
+    try:
+        from print_studio import _tool_resize
+        _tool_resize()
+    except Exception:
+        st.error("ไม่สามารถเปิดเครื่องมือขยายภาพได้ชั่วคราว กรุณาลองจากแท็บสตูดิโองานพิมพ์")
+    st.stop()
+
 # Only load the selected tool when required; a broken optional editor must
 # never take the entire sign-design site offline.
 if st.query_params.get("studio") == "compare":
@@ -156,12 +167,12 @@ st.markdown("""
 
 # An obvious entry point independent of which Streamlit tab is active.
 st.link_button(
-    "🔍 ลากเส้นดูภาพก่อน–หลัง / ซูม 1200% (กดดูตัวอย่างทันที)",
-    "https://thanasin-ai-design.streamlit.app/?studio=compare",
+    "🔎 ขยายภาพ + เลือกรูปแบบปรับคม + ลากก่อน–หลัง",
+    "https://thanasin-ai-design.streamlit.app/?studio=resize",
     use_container_width=True,
     type="primary",
 )
-st.caption("คลิกปุ่มนี้เพื่อเปิดภาพตัวอย่างที่มีเส้นลากกลางภาพทันที ไม่ต้องหาโหมดย่อยหรืออัปโหลดก่อน")
+st.caption("กดเปิดเครื่องมือขยายภาพ / DPI พร้อมเลือกรูปแบบปรับคม และลากเส้นเปรียบเทียบได้ในหน้าเดียว")
 
 def section_title(title):
     st.markdown(f'<div class="form-section-title">{html.escape(title)}</div>', unsafe_allow_html=True)
