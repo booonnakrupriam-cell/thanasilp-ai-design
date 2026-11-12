@@ -9,6 +9,7 @@ export default function (component) {
   let layers = [], active = null, mode = "select", zoom = 1, pan = {x:0,y:0};
   let pressed = null, previewRect = null, undo = [], redo = [];
   let customFontData = null, destroyed = false;
+  const ocrBoxes = Array.isArray(component.data.ocr) ? component.data.ocr : [];
   const fontIds = ["Sarabun", "Kanit", "Mitr", "Prompt", "Chonburi", "Sriracha", "Noto Serif Thai", "Tahoma", "ThanasilpCustom"];
   const editIds = ["te-text","te-font","te-weight","te-size","te-color","te-outline","te-stroke","te-shadow"];
   const toolbar = root.querySelectorAll("[data-editor-mode]");
@@ -38,9 +39,9 @@ export default function (component) {
   }
   function setMode(m) {
     mode=m; toolbar.forEach(b=>b.classList.toggle("active",b.dataset.editorMode===m));
-    const labels={select:"คลิกข้อความที่เพิ่มแล้วเพื่อเลือก และลากเพื่อย้าย",add:"พิมพ์ข้อความทางขวา แล้วคลิกตำแหน่งวางบนภาพ",cover:"ลากกรอบบนข้อความเดิมที่ต้องการปิดทับ (เหมาะกับพื้นเรียบ)",sample:"คลิกพื้นภาพเพื่อดูดสีสำหรับปิดข้อความเก่า",pan:"ลากภาพเพื่อเลื่อนตำแหน่งเมื่อซูม"};
+    const labels={select:"คลิกข้อความที่เพิ่มแล้วเพื่อเลือก และลากเพื่อย้าย",add:"พิมพ์ข้อความทางขวา แล้วคลิกตำแหน่งวางบนภาพ",ocr:"คลิกกรอบข้อความสีฟ้าที่ OCR ตรวจพบเพื่อสร้างชั้นข้อความให้แก้ได้ ตรวจการสะกดก่อนใช้",cover:"ลากกรอบบนข้อความเดิมที่ต้องการปิดทับ (เหมาะกับพื้นเรียบ)",sample:"คลิกพื้นภาพเพื่อดูดสีสำหรับปิดข้อความเก่า",pan:"ลากภาพเพื่อเลื่อนตำแหน่งเมื่อซูม"};
     report(labels[m]||"พร้อมใช้งาน");
-    canvas.style.cursor=m==="pan"?"grab":m==="sample"?"crosshair":m==="cover"?"crosshair":m==="add"?"copy":"move";
+    canvas.style.cursor=m==="pan"?"grab":m==="sample"?"crosshair":m==="cover"?"crosshair":m==="ocr"?"crosshair":m==="add"?"copy":"move";
     render();
   }
   function transform() {
@@ -121,6 +122,18 @@ export default function (component) {
   function render() {
     if (!image.complete||!image.width||destroyed) return;
     paint(ctx,canvas.width,canvas.height,true);
+    if(mode==="ocr" && ocrBoxes.length){
+      const t=transform();
+      ctx.save(); ctx.translate(t.ox,t.oy);ctx.scale(t.k,t.k);
+      ctx.lineWidth=Math.max(2/t.k,1);
+      for(const o of ocrBoxes){
+        if(![o.x,o.y,o.w,o.h].every(Number.isFinite))continue;
+        ctx.strokeStyle="#02a9ff";
+        ctx.fillStyle="rgba(0,169,255,.16)";
+        ctx.fillRect(o.x,o.y,o.w,o.h);ctx.strokeRect(o.x,o.y,o.w,o.h);
+      }
+      ctx.restore();
+    }
     const wcm=Number($("te-wcm").value)||1,hcm=Number($("te-hcm").value)||1;
     const dpix=Math.min(image.width/(wcm/2.54),image.height/(hcm/2.54));
     const ratioImage=image.width/image.height,ratioPrint=wcm/hcm;
@@ -144,6 +157,29 @@ export default function (component) {
     if(!image.complete||!image.width) return;
     e.preventDefault();canvas.setPointerCapture(e.pointerId);
     const p=point(e);
+    if(mode==="ocr"){
+      const matched=ocrBoxes.find(o=>p.x>=o.x-6&&p.x<=o.x+o.w+6&&p.y>=o.y-6&&p.y<=o.y+o.h+6);
+      if(!matched){notify(ocrBoxes.length?"คลิกภายในกรอบ OCR สีฟ้าเพื่อเลือกข้อความ":"ยังไม่มีผล OCR กดสแกนหาข้อความด้านบนก่อน",true);return;}
+      const before=snap();
+      const padding=Math.max(3,matched.h*.15);
+      const x=clamp(Math.round(matched.x-padding),0,image.width-1);
+      const y=clamp(Math.round(matched.y-padding),0,image.height-1);
+      const w=Math.min(image.width-x,Math.round(matched.w+2*padding));
+      const h=Math.min(image.height-y,Math.round(matched.h+2*padding));
+      // Sample background just outside the text bbox as a first approximation.
+      const sx=clamp(Math.round(matched.x-5),0,image.width-1),sy=clamp(Math.round(matched.y+matched.h/2),0,image.height-1);
+      const sample=srcCtx.getImageData(sx,sy,1,1).data;
+      const bg="#"+[sample[0],sample[1],sample[2]].map(v=>v.toString(16).padStart(2,"0")).join("");
+      $("te-cover").value=bg;
+      layers.push({id:Date.now()+Math.random(),type:"cover",x,y,w,h,color:bg});
+      const newText={id:Date.now()+Math.random(),type:"text",text:String(matched.text).slice(0,500),
+        x,y,font:$("te-font").value,weight:$("te-weight").value,
+        size:clamp(Math.round(matched.h*.92),8,360),color:$("te-color").value,
+        outline:$("te-outline").value,stroke:Number($("te-stroke").value),shadow:Number($("te-shadow").value)};
+      layers.push(newText);commit(before);choose(newText.id);setMode("select");
+      notify("สร้างข้อความที่แก้ไขได้จาก OCR แล้ว • ตรวจสะกดและปรับขนาด/สี • พื้นหลังลายซับซ้อนอาจปิดทับไม่เนียน");
+      return;
+    }
     if(mode==="sample") {
       const x=clamp(Math.floor(p.x),0,image.width-1),y=clamp(Math.floor(p.y),0,image.height-1);
       const rgb=srcCtx.getImageData(x,y,1,1).data;
