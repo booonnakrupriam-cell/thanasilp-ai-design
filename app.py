@@ -14,7 +14,7 @@ if st.query_params.get("studio") == "compare":
     try:
         from print_studio import _tool_quality_comparison
         _tool_quality_comparison()
-    except (ImportError, AttributeError, OSError):
+    except Exception:
         # Independent comparison fallback, no advanced-editor dependencies.
         from print_preview import make_quality_demo_previews, render_quality_preview
         from PIL import Image, ImageOps
@@ -240,7 +240,7 @@ with tab_print_studio:
     try:
         from print_studio import render_print_studio
         render_print_studio()
-    except (ImportError, AttributeError, OSError):
+    except Exception:
         st.error("มีปัญหาโหลดเครื่องมือสตูดิโอบางส่วน แต่หน้าเว็บและหมวดสร้างคำสั่ง AI ยังใช้ได้ครับ")
         st.link_button("🔍 เปิดเครื่องมือลากเส้นดูภาพก่อน–หลัง", "https://thanasin-ai-design.streamlit.app/?studio=compare")
 
