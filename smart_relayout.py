@@ -6,6 +6,7 @@ text, people or decorative objects. The UI makes this distinction explicit.
 """
 from __future__ import annotations
 
+import hashlib
 import math
 from io import BytesIO
 from urllib.parse import quote
@@ -164,9 +165,15 @@ def render_smart_relayout(source: Image.Image | None):
                                placeholder="เช่น เก็บข้อความและรูปคนครบ ย้ายรูปไปด้านขวา ไม่เพิ่มขอบขาว")
         prompt = _ai_prompt(width_cm, height_cm, details)
         st.text_area("คำสั่งสร้างใหม่จากภาพแนบ (คัดลอกได้)", value=prompt,
-                     height=220, key="smart_ai_prompt")
+                     height=220, key=f"smart_ai_prompt_{width_cm:g}_{height_cm:g}_{hash(details)}")
         st.link_button("🚀 เปิด ChatGPT เพื่อสร้างภาพใหม่", "https://chatgpt.com/?q=" + quote(prompt, safe=""), use_container_width=True)
-        st.caption("ต้องแนบภาพต้นฉบับเข้าแชท ChatGPT ด้วย เว็บไซต์ไม่สามารถส่งไฟล์ที่อัปโหลดไปโดยอัตโนมัติ")
+        ai_left, ai_right = st.columns(2)
+        with ai_left:
+            st.link_button("✨ เปิด Gemini", "https://gemini.google.com/app", use_container_width=True)
+        with ai_right:
+            st.link_button("🌐 เปิด Meta AI", "https://www.meta.ai/", use_container_width=True)
+        st.caption("ต้องแนบภาพต้นฉบับเข้าแชท AI ด้วย เว็บไซต์ไม่สามารถส่งไฟล์ที่อัปโหลดไปโดยอัตโนมัติ "
+                   "สำหรับ Gemini และ Meta AI ให้คัดลอกข้อความด้านบนไปวางในแชท")
         return
 
     st.info("โหมดนี้จัดส่วนภาพเป็นบล็อกใหม่จริง ไม่ใช่เพิ่มกรอบขาว แต่ไม่สามารถแยกข้อความ/คน/วงกลมทุกชิ้นจากรูป JPG/PNG ที่รวมชั้นแล้วได้อย่างสมบูรณ์ "
@@ -214,8 +221,9 @@ def render_smart_relayout(source: Image.Image | None):
     fmt = st.selectbox("รูปแบบไฟล์", ["PNG", "TIFF"], key="smart_format")
     cmyk = st.checkbox("TIFF แบบ CMYK เบื้องต้น (ยังไม่ฝัง ICC ของเครื่องพิมพ์)", value=False,
                        disabled=fmt != "TIFF", key="smart_cmyk")
-    fingerprint = (source.width, source.height, width_cm, height_cm, dpi_effective, tuple(cut_values), background,
-                   color, spacing, top_offset, fmt, cmyk)
+    source_digest = hashlib.sha256(source.resize((64, 64), Image.Resampling.BILINEAR).tobytes()).hexdigest()
+    fingerprint = (source_digest, source.width, source.height, width_cm, height_cm, dpi_effective,
+                   tuple(cut_values), background, color, spacing, top_offset, fmt, cmyk)
     if st.button("🖨️ สร้างไฟล์จัดวางใหม่พร้อมพิมพ์", type="primary", use_container_width=True,
                  key="smart_make_file"):
         with st.spinner("กำลังสร้างไฟล์ขนาดจริง..."):
