@@ -106,7 +106,8 @@ export default function (component) {
   function paint(g,w,h,selection=false) {
     g.clearRect(0,0,w,h);
     g.save();
-    g.fillStyle="#dae4ee";g.fillRect(0,0,w,h);
+    // Grey checker workspace background is preview-only. Preserve PNG transparency.
+    if(selection){g.fillStyle="#dae4ee";g.fillRect(0,0,w,h);}
     if(selection) {
       const t=transform();
       g.translate(t.ox,t.oy);g.scale(t.k,t.k);
@@ -284,7 +285,7 @@ export default function (component) {
     if(file.size>35*1024*1024){notify("ไฟล์โปรเจกต์ใหญ่เกิน 35 MB",true);return;}
     try{
       const obj=JSON.parse(await file.text());
-      if(obj.version!==1 || typeof obj.image!=="string" || !obj.image.startsWith("data:image/"))throw Error("ไม่ใช่โปรเจกต์ที่รองรับ");
+      if(obj.version!==1 || typeof obj.image!=="string" || !/^data:image\/(png|jpeg|webp);base64,/i.test(obj.image))throw Error("ไม่ใช่โปรเจกต์ภาพที่รองรับ");
       if(!Array.isArray(obj.layers)||obj.layers.length>500)throw Error("จำนวนชั้นข้อมูลเกินกำหนด");
       const safe=obj.layers.map(o=>{
         if(!["text","cover"].includes(o.type))throw Error("ข้อมูลชั้นภาพไม่ถูกต้อง");
