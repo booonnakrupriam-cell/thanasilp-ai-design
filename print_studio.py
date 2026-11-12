@@ -299,10 +299,13 @@ def _tool_resize():
     st.caption("เลือกรูปแบบที่ต้องการด้วยปุ่มใต้ภาพ โปรแกรมจะตั้งโหมด ความคม และส่วนโค้งให้ทันที และยังปรับละเอียดเองได้ด้านล่าง")
     if "studio_resize_preset_v3" not in st.session_state:
         _set_resize_preset("🪧 ป้ายตัวหนังสือคม")
-    preset_src = image
-    if preset_src is None:
+    if image is not None:
+        preset_src = image.copy()
+        preset_src.thumbnail((520, 260), Image.Resampling.LANCZOS)
+    else:
         _, demo_jpg = make_quality_demo_previews()
         preset_src = Image.open(BytesIO(demo_jpg)).convert("RGBA")
+        preset_src.thumbnail((520, 260), Image.Resampling.LANCZOS)
     all_presets = list(RESIZE_PRESETS)
     for start_index in range(0, len(all_presets), 2):
         preset_cols = st.columns(2)
@@ -869,18 +872,18 @@ def render_print_studio():
     st.markdown("### 🖨️ ธนศิลป์ Print Studio")
     st.caption("แก้ข้อความบนภาพแบบคลิก/ลากได้จริง พร้อมเครื่องมือขยายภาพและเตรียมงานพิมพ์เดิม")
     st.info("ภาพอัปโหลดจะผ่านเซิร์ฟเวอร์ของเว็บก่อนเปิดตัวแก้ไข กรุณาได้รับอนุญาตก่อนใช้งานภาพบุคคล")
-    st.markdown("**👇 ต้องการเส้นลากก่อน–หลัง? เลือกรายการแรก 🔍 หรือใช้ลิงก์ตรงจากหน้าแรก**")
+    st.markdown("**👇 เลือกหมวดขยายภาพ / DPI เพื่อเลือกรูปแบบปรับความคมและลากเส้นก่อน–หลังได้ทันที**")
     mode = st.radio(
         "เลือกเครื่องมือในสตูดิโองานพิมพ์",
         [
-            "🔍 ลากดูความคมชัด ก่อน–หลัง (มีตัวอย่างให้ลอง)",
+            "🔎 1. ขยายภาพ / DPI • เลือกรูปแบบปรับคมและลากก่อน–หลัง",
+            "🔍 เปรียบเทียบภาพก่อน–หลังจากสองไฟล์",
             "🖱️ แก้ข้อความบนภาพแบบคลิก / ลาก",
-            "🔎 1. ขยายภาพ / DPI",
             "✏️ 2. แก้ข้อความบนภาพ (แบบเดิม)",
             "✂️ 3. สติกเกอร์ไดคัท",
             "🕯️ 4. ป้ายงานศพ / ภาพอาลัย",
         ],
-        key="studio_mode_compare_default_v2",
+        key="studio_mode_resize_first_v3",
         horizontal=False,
         label_visibility="collapsed",
     )
