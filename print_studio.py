@@ -517,10 +517,7 @@ def _resize_preset_preview(image, preset):
             after_label="หลัง • ปรับขนาด/จัดวางใหม่ไม่บิดรูป",
         )
     else:
-        st.info("อัปโหลดภาพด้านบนเพื่อเปรียบเทียบไฟล์ของคุณเอง หรือทดลองลากเส้นกลางภาพตัวอย่างด้านล่าง")
-        demo_before, demo_after = make_quality_demo_previews()
-        render_quality_preview(demo_before, demo_after, title="ภาพสาธิต • ลาก ↔ ที่เส้นสีขาว",
-                               before_label="ก่อน • ภาพสาธิต", after_label="หลัง • ภาพสาธิต")
+        st.info("อัปโหลดภาพด้านบนเพื่อดูพรีวิวก่อน–หลังของงานจริง ระบบจะแสดงเส้นลาก ↔ เมื่อมีภาพแล้ว")
 
     fingerprint = (hashlib.sha256(up.getvalue()).hexdigest() if up is not None else "")
     settings = (fingerprint, wpx, hpx, effective_dpi, framing, mode, sharpen,
@@ -966,15 +963,8 @@ def _tool_memorial():
 
 def _tool_quality_comparison():
     st.markdown("#### 🔍 ลากเส้นกลางภาพ ดูความคมชัดก่อน–หลัง")
-    st.caption("ทดลองลากเส้นสีขาวที่มีปุ่ม ↔ กลางภาพได้ทันที แล้วซูม 100–1200%")
-    # A usable visual appears on initial load, even before any user uploads.
-    demo_before, demo_after = make_quality_demo_previews()
-    st.markdown("**👇 ทดลองลากเส้นแบ่งในภาพนี้ได้เลย (ภาพสาธิต)**")
-    render_quality_preview(demo_before, demo_after,
-                           title="ตัวอย่างก่อน–หลัง • ใช้เมาส์หรือนิ้วลาก ↔",
-                           before_label="ก่อน • ภาพตัวอย่างเบลอ",
-                           after_label="หลัง • ภาพตัวอย่างคมชัด")
-    st.markdown("**📷 เปรียบเทียบภาพงานของคุณเอง**")
+    st.caption("อัปโหลดภาพก่อนแก้และหลังแก้เพื่อใช้เส้น ↔ ลากเทียบความคมชัดจริง ซูมได้ 100–1200%")
+    st.markdown("**📷 เปรียบเทียบภาพงานของคุณ**")
     st.caption("อัปโหลดภาพต้นฉบับและภาพที่ปรับแล้ว 2 ไฟล์ จะมีเส้นลากแสดงใต้ช่องอัปโหลด")
     col_before, col_after = st.columns(2)
     with col_before:
