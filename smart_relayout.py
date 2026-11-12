@@ -199,6 +199,14 @@ def render_smart_relayout(source: Image.Image | None):
     if abs(source_ratio / target_ratio - 1) > .025:
         st.caption(f"อัตราส่วนต้นฉบับ {source_ratio:.3f}:1 และป้ายใหม่ {target_ratio:.3f}:1 ต่างกัน "
                    "จึงไม่สามารถทั้งคงภาพครบ ไม่มีพื้นที่เสริม และไม่บิดรูป ได้พร้อมกันด้วยการย่อ–ขยายธรรมดา")
+        if full_bleed:
+            crop_fraction = (1 - target_ratio / source_ratio
+                             if source_ratio > target_ratio
+                             else 1 - source_ratio / target_ratio)
+            crop_axis = "ซ้าย–ขวา" if source_ratio > target_ratio else "บน–ล่าง"
+            st.warning(f"ขนาดนี้ต้องครอปภาพต้นฉบับรวมประมาณ {crop_fraction * 100:.1f}% "
+                       f"ของแนว{crop_axis} หากข้อความหรือคนอยู่บริเวณขอบ อาจถูกตัด! "
+                       "หากต้องเก็บองค์ประกอบครบเต็มขอบ แนะนำเลือกให้ AI ออกแบบใหม่ทั้งภาพ")
 
     background, bg_color, scale = "ไล่สีจากขอบภาพ", "#F1EEE8", 100
     if full_bleed:
