@@ -245,7 +245,7 @@ def render_quality_preview(before_jpg: bytes | None, after_jpg: bytes,
         .replace("__SINGLE_CLASS__", "single" if one else "")
         .replace("__BEFORE_SRC__", "data:image/jpeg;base64," + base64.b64encode(before_jpg).decode("ascii"))
         .replace("__AFTER_SRC__", "data:image/jpeg;base64," + base64.b64encode(after_jpg).decode("ascii")))
-    components.html(html_code, height=600, scrolling=False)
+    components.html(html_code, height=660, scrolling=False)
     st.caption("พรีวิวใช้ภาพย่อสำหรับการตรวจด้วยตา การซูม 1200% ไม่ใช่การเพิ่มความละเอียดจริงของไฟล์พิมพ์")
 
 
