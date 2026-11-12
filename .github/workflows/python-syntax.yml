@@ -1,0 +1,22 @@
+name: Check Python syntax
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.py'
+      - '.github/workflows/python-syntax.yml'
+  pull_request:
+    paths:
+      - '**.py'
+      - '.github/workflows/python-syntax.yml'
+  workflow_dispatch:
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject broken Python syntax before deploy
+        run: python -m py_compile app.py print_studio.py print_preview.py interactive_sign_editor.py
