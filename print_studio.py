@@ -81,14 +81,82 @@ def _system_thai_font():
     return next((p for p in paths if Path(p).is_file()), None)
 
 
-def _font(size, font_upload=None):
+@st.cache_data(show_spinner=False)
+def _available_thai_fonts():
+    fonts = {}
+    for pattern in (
+        "/usr/share/fonts/truetype/tlwg/*.ttf",
+        "/usr/share/fonts/truetype/tlwg/*.otf",
+        "/usr/share/fonts/**/*NotoSansThai*.ttf",
+        "/usr/share/fonts/**/*NotoSerifThai*.ttf",
+        "/usr/share/fonts/**/*Sarabun*.ttf",
+    ):
+        for path in sorted(glob.glob(pattern, recursive=True)):
+            if Path(path).is_file():
+                label = Path(path).stem.replace("_", " ")
+                fonts.setdefault(label, path)
+    return fonts
+
+
+def _font(size, font_upload=None, font_choice=None):
     try:
         if font_upload is not None:
             return ImageFont.truetype(BytesIO(font_upload.getvalue()), size)
-        path = _system_thai_font()
+        path = _available_thai_fonts().get(font_choice) or _system_thai_font()
         return ImageFont.truetype(path, size) if path else None
     except Exception:
         return None
+
+
+def _draw_smooth_font_outline(canvas, content, xy, font, fill, stroke, stroke_fill, shadow):
+    """วาดขอบตามเส้นฟอนต์จริง และลดรอยหยักด้วย supersampling เฉพาะตัวอักษร"""
+    if not content or font is None:
+        return
+    # ป้องกันชั้นข้อความใหญ่มากจนกินหน่วยความจำของเซิร์ฟเวอร์
+    scale = 2
+    try:
+        hf = font.font_variant(size=max(1, font.size * scale))
+        spacing = 12 * scale
+        w_stroke = int(stroke) * scale
+        measure = ImageDraw.Draw(Image.new("L", (1, 1)))
+        bbox = measure.multiline_textbbox((0, 0), content, font=hf, spacing=spacing, stroke_width=w_stroke)
+        pad = (max(int(stroke), int(shadow)) + 6) * scale
+        width = max(1, bbox[2] - bbox[0] + 2 * pad)
+        height = max(1, bbox[3] - bbox[1] + 2 * pad)
+        if width * height > 18_000_000:
+            # หากข้อความยาวมาก ให้ใช้เส้นฟอนต์จริงที่ความละเอียดต้นฉบับ
+            d = ImageDraw.Draw(canvas)
+            if shadow:
+                d.multiline_text((xy[0] + shadow, xy[1] + shadow),
+                                 content, font=font, fill="#303030", spacing=12,
+                                 stroke_width=int(stroke), stroke_fill="#303030")
+            d.multiline_text(xy, content, font=font, fill=fill, spacing=12,
+                             stroke_width=int(stroke), stroke_fill=stroke_fill)
+            return
+        layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(layer)
+        pos = (pad - bbox[0], pad - bbox[1])
+        if shadow:
+            draw.multiline_text((pos[0] + shadow * scale, pos[1] + shadow * scale),
+                                content, font=hf, fill="#303030", spacing=spacing,
+                                stroke_width=w_stroke, stroke_fill="#303030")
+        draw.multiline_text(pos, content, font=hf, fill=fill, spacing=spacing,
+                            stroke_width=w_stroke, stroke_fill=stroke_fill)
+        layer = layer.resize((max(1, round(width / scale)),
+                              max(1, round(height / scale))), Image.Resampling.LANCZOS)
+        x = int(xy[0]) + math.floor((bbox[0] - pad) / scale)
+        y = int(xy[1]) + math.floor((bbox[1] - pad) / scale)
+        left, top = max(0, x), max(0, y)
+        right = min(canvas.width, x + layer.width)
+        bottom = min(canvas.height, y + layer.height)
+        if right > left and bottom > top:
+            crop = layer.crop((left - x, top - y, right - x, bottom - y))
+            canvas.alpha_composite(crop, (left, top))
+    except (OSError, ValueError):
+        # กลับไปวาดแบบปกติโดยไม่ยืดหรือบิดตัวอักษร
+        ImageDraw.Draw(canvas).multiline_text(xy, content, font=font, fill=fill,
+                                              spacing=12, stroke_width=int(stroke),
+                                              stroke_fill=stroke_fill)
 
 
 def _small_preview(img):
@@ -150,6 +218,8 @@ def _tool_text():
     if image is not None:
         st.caption(f"ภาพต้นฉบับ {image.width:,} × {image.height:,} พิกเซล")
     content = st.text_area("ข้อความใหม่ (ภาษาไทยได้)", value="", height=80, key="studio_text_content")
+    font_list = _available_thai_fonts()
+    font_choice = st.selectbox("เลือกฟอนต์ไทย", list(font_list) or ["อัปโหลดฟอนต์ด้านล่าง"], key="studio_text_font_choice")
     font_upload = st.file_uploader("ฟอนต์ TTF/OTF ของคุณ (ไม่บังคับ)", type=["ttf", "otf"], key="studio_text_font")
     if not _system_thai_font() and font_upload is None:
         st.warning("เซิร์ฟเวอร์ยังไม่พบฟอนต์ไทย กรุณาอัปโหลดไฟล์ TTF/OTF เพื่อให้ข้อความภาษาไทยแสดงถูกต้อง")
@@ -164,6 +234,7 @@ def _tool_text():
         stroke = st.slider("ความหนาขอบ (px)", 0, 20, 3, key="studio_text_stroke")
         stroke_color = st.color_picker("สีขอบตัวอักษร", "#14284D", key="studio_text_stroke_color")
     shadow = st.slider("เงาตัวอักษร (px)", 0, 20, 3, key="studio_text_shadow")
+    st.caption("เส้นขอบโค้งตามรูปทรงจริงของฟอนต์ไทยแต่ละแบบ ไม่บีบ ไม่ยืด ไม่บิดสระวรรณยุกต์ และใช้การลดรอยหยักเพื่อขอบเรียบ")
     cover = st.checkbox("ปิดทับข้อความเดิมด้วยสี่เหลี่ยมสีพื้น", value=False, key="studio_text_cover")
     if cover:
         cc1, cc2 = st.columns(2)
@@ -180,7 +251,7 @@ def _tool_text():
         elif not content.strip():
             st.error("กรุณากรอกข้อความใหม่")
         else:
-            font = _font(size, font_upload)
+            font = _font(size, font_upload, font_choice)
             if font is None:
                 st.error("ไม่มีฟอนต์ที่ใช้ได้ กรุณาอัปโหลดฟอนต์ TTF/OTF")
             else:
@@ -192,11 +263,8 @@ def _tool_text():
                         x2, y2 = min(out.width, x1 + int(out.width * cw / 100)), min(out.height, y1 + int(out.height * ch / 100))
                         d.rectangle((x1, y1, x2, y2), fill=cover_color)
                     x, y = int(out.width * x_pct / 100), int(out.height * y_pct / 100)
-                    if shadow:
-                        d.multiline_text((x + shadow, y + shadow), content, font=font,
-                                         fill="#303030", spacing=12, stroke_width=stroke, stroke_fill="#303030")
-                    d.multiline_text((x, y), content, font=font, fill=color,
-                                     spacing=12, stroke_width=stroke, stroke_fill=stroke_color)
+                    _draw_smooth_font_outline(out, content, (x, y), font,
+                                               color, stroke, stroke_color, shadow)
                     st.session_state["studio_text_result"] = _image_bytes(out)
                     st.session_state["studio_text_preview"] = _small_preview(out)
     if "studio_text_result" in st.session_state:
