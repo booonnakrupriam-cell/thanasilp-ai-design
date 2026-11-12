@@ -10,6 +10,7 @@ from pathlib import Path
 import streamlit as st
 
 from interactive_sign_editor import render_interactive_editor
+from print_preview import prepare_quality_previews, render_quality_preview, render_quality_from_images
 from PIL import (
     Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter,
     ImageFont, ImageOps,
@@ -217,10 +218,17 @@ def _tool_resize():
                     out = ImageEnhance.Sharpness(out).enhance(1 + sharpen)
                 binary = _image_bytes(out, fmt, effective_dpi, cmyk)
                 st.session_state["studio_resize_result"] = (binary, fmt, wpx, hpx)
+                st.session_state["studio_resize_compare"] = prepare_quality_previews(image, out)
     result = st.session_state.get("studio_resize_result")
     if result:
         binary, format_name, ww, hh = result
         st.success(f"ไฟล์ล่าสุด: {ww:,} × {hh:,} พิกเซล")
+        if st.session_state.get("studio_resize_compare"):
+            before_preview, after_preview = st.session_state["studio_resize_compare"]
+            render_quality_preview(before_preview, after_preview,
+                                   title="ก่อน–หลังขยายภาพ • ลากเส้นและซูมได้ถึง 1200%",
+                                   before_label="ก่อน • ภาพต้นฉบับ",
+                                   after_label="หลัง • ภาพที่ขยาย / ปรับคมชัด")
         _download("⬇️ ดาวน์โหลดไฟล์สำหรับงานพิมพ์",
                   binary, "thanasilp_resized." + ("tif" if format_name == "TIFF" else "png"),
                   "image/tiff" if format_name == "TIFF" else "image/png")
@@ -284,8 +292,13 @@ def _tool_text():
                                                color, stroke, stroke_color, shadow)
                     st.session_state["studio_text_result"] = _image_bytes(out)
                     st.session_state["studio_text_preview"] = _small_preview(out)
+                    st.session_state["studio_text_compare"] = prepare_quality_previews(image, out)
     if "studio_text_result" in st.session_state:
-        if "studio_text_preview" in st.session_state:
+        if st.session_state.get("studio_text_compare"):
+            before_preview, after_preview = st.session_state["studio_text_compare"]
+            render_quality_preview(before_preview, after_preview,
+                                   title="ก่อน–หลังแก้ข้อความ • ลากตรวจตัวอักษรและขอบ")
+        elif "studio_text_preview" in st.session_state:
             _preview(st.session_state["studio_text_preview"], "ตัวอย่างภาพล่าสุด")
         _download("⬇️ ดาวน์โหลดภาพ PNG ที่แก้ข้อความแล้ว",
                   st.session_state["studio_text_result"], "thanasilp_text_edited.png", "image/png")
@@ -393,7 +406,13 @@ def _tool_sticker():
                             x = margin_px + col * (sw + gap_px)
                             y = margin_px + row * (sh + gap_px)
                             sheet_img.alpha_composite(tile, (x, y))
+                    # ก่อน/หลังใช้ขนาดผ้าใบเดียวกัน เพื่อให้ลากเส้นตรวจขอบได้ตรงตำแหน่ง
+                    sticker_before = Image.new("RGBA", sticker.size, (0, 0, 0, 0))
+                    pad = max(6, outline + 6)
+                    sticker_before.alpha_composite(base, (pad, pad))
+                    before_preview, after_preview = prepare_quality_previews(sticker_before, sticker)
                     st.session_state["studio_sticker_result"] = {
+                        "compare": (before_preview, after_preview),
                         "single": _image_bytes(sticker),
                         "guide": _image_bytes(_sticker_guide(sticker)),
                         "sheet": _image_bytes(sheet_img, dpi=actual_dpi),
@@ -403,6 +422,10 @@ def _tool_sticker():
     result = st.session_state.get("studio_sticker_result")
     if result:
         st.success(f"จัดเรียงได้ {result['count']} ชิ้นต่อแผ่น")
+        if result.get("compare"):
+            render_quality_preview(*result["compare"], title="ก่อน–หลังทำขอบสติกเกอร์ • ซูมตรวจเส้นไดคัท",
+                                   before_label="ก่อน • ยังไม่มีขอบ",
+                                   after_label="หลัง • ขอบขาว")
         _preview(result["preview"], "ตัวอย่างแผ่นสติกเกอร์")
         _download("⬇️ ดาวน์โหลดสติกเกอร์ PNG โปร่งใสพร้อมขอบขาว",
                   result["single"], "thanasilp_sticker.png", "image/png")
@@ -604,23 +627,65 @@ def _tool_memorial():
                                         font_choice, text_stroke, text_stroke_color)
                 st.session_state["studio_memorial_result"] = _image_bytes(poster, dpi=effective_dpi)
                 st.session_state["studio_memorial_preview"] = _small_preview(poster)
+                st.session_state["studio_memorial_zoom"] = prepare_quality_previews(None, poster)[1]
     if "studio_memorial_result" in st.session_state:
-        _preview(st.session_state["studio_memorial_preview"], "ตัวอย่างป้ายล่าสุด")
+        if st.session_state.get("studio_memorial_zoom"):
+            render_quality_preview(None, st.session_state["studio_memorial_zoom"],
+                                   title="ซูมตรวจชื่อ สระ วรรณยุกต์ และรายละเอียดป้ายอาลัย",
+                                   after_label="ป้ายอาลัยที่สร้าง")
+        else:
+            _preview(st.session_state["studio_memorial_preview"], "ตัวอย่างป้ายล่าสุด")
         _download("⬇️ ดาวน์โหลดป้ายอาลัย PNG",
                   st.session_state["studio_memorial_result"], "thanasilp_memorial.png", "image/png")
     st.caption("โปรดตรวจสะกดชื่อ วันเดือนปี และรูปภาพก่อนพิมพ์จริง ภาพที่ส่งเข้าระบบออนไลน์จะถูกประมวลผลในเซิร์ฟเวอร์ ไม่ใช่ออฟไลน์")
 
 
+def _tool_quality_comparison():
+    st.markdown("#### 🔍 เปรียบเทียบความคมชัด ก่อน / หลัง")
+    st.caption("อัปโหลดภาพก่อนแก้และหลังแก้จาก ChatGPT หรือโปรแกรมใดก็ได้ เพื่อเลื่อนเส้นเปรียบเทียบและซูม 100–1200%")
+    col_before, col_after = st.columns(2)
+    with col_before:
+        before_up = st.file_uploader(
+            "ภาพก่อนแก้ (ก่อน)", type=["jpg", "jpeg", "png", "webp", "tif", "tiff"],
+            key="studio_compare_before")
+    with col_after:
+        after_up = st.file_uploader(
+            "ภาพหลังแก้ (หลัง)", type=["jpg", "jpeg", "png", "webp", "tif", "tiff"],
+            key="studio_compare_after")
+    if before_up and after_up:
+        before_image = _open_image(before_up)
+        after_image = _open_image(after_up)
+        if before_image is not None and after_image is not None:
+            st.caption(
+                f"ก่อน {before_image.width:,} × {before_image.height:,} px"
+                f" • หลัง {after_image.width:,} × {after_image.height:,} px"
+            )
+            a = before_image.width / max(1, before_image.height)
+            b = after_image.width / max(1, after_image.height)
+            if abs(a / b - 1) > .035:
+                st.warning(
+                    "ภาพสองไฟล์มีอัตราส่วนต่างกัน พรีวิวจะยืดภาพก่อนให้ตรงกับภาพหลัง "
+                    "เส้นแบ่งจึงอาจไม่ทับตำแหน่งเดิมพอดี"
+                )
+            render_quality_from_images(before_image, after_image,
+                                       title="ลากดูความแตกต่างและซูมตรวจคุณภาพ")
+    else:
+        st.info("เลือกภาพก่อนและหลังทั้งสองไฟล์ แล้วจะเห็นเส้นแบ่งลากซ้าย–ขวาทันที")
+    st.caption("พรีวิวเพื่อเปรียบเทียบภาพ ไม่ใช่การประมวลผลเพิ่มความคมชัดหรือเพิ่มพิกเซลของไฟล์ต้นฉบับ")
+
+
+
 def render_print_studio():
-    """แสดง 5 โหมดชัดเจนทั้งมือถือและคอมพิวเตอร์ โดยคง 4 เครื่องมือเดิมไว้"""
+    """แสดงเครื่องมือแก้ภาพและพรีวิวแบบลาก รวมกับ 4 เครื่องมือเดิม"""
     st.markdown("### 🖨️ ธนศิลป์ Print Studio")
     st.caption("แก้ข้อความบนภาพแบบคลิก/ลากได้จริง พร้อมเครื่องมือขยายภาพและเตรียมงานพิมพ์เดิม")
     st.info("ภาพอัปโหลดจะผ่านเซิร์ฟเวอร์ของเว็บก่อนเปิดตัวแก้ไข กรุณาได้รับอนุญาตก่อนใช้งานภาพบุคคล")
-    st.markdown("**👇 เลือกเครื่องมือได้จาก 5 โหมดนี้**")
+    st.markdown("**👇 เลือกเครื่องมือที่ต้องการได้จากรายการด้านล่าง**")
     mode = st.radio(
         "เลือกเครื่องมือในสตูดิโองานพิมพ์",
         [
             "🖱️ ใหม่! แก้ข้อความบนภาพแบบคลิก / ลาก",
+            "🔍 ใหม่! พรีวิวลากเปรียบเทียบ / ซูม 1200%",
             "🔎 1. ขยายภาพ / DPI",
             "✏️ 2. แก้ข้อความบนภาพ (แบบเดิม)",
             "✂️ 3. สติกเกอร์ไดคัท",
@@ -633,6 +698,8 @@ def render_print_studio():
     st.divider()
     if mode.startswith("🖱️"):
         render_interactive_editor()
+    elif mode.startswith("🔍"):
+        _tool_quality_comparison()
     elif mode.startswith("🔎"):
         _tool_resize()
     elif mode.startswith("✏️"):
