@@ -10,7 +10,7 @@ from pathlib import Path
 import streamlit as st
 
 from interactive_sign_editor import render_interactive_editor
-from print_preview import prepare_quality_previews, render_quality_preview, render_quality_from_images
+from print_preview import prepare_quality_previews, render_quality_preview, render_quality_from_images, make_quality_demo_previews
 from PIL import (
     Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter,
     ImageFont, ImageOps,
@@ -641,8 +641,17 @@ def _tool_memorial():
 
 
 def _tool_quality_comparison():
-    st.markdown("#### 🔍 เปรียบเทียบความคมชัด ก่อน / หลัง")
-    st.caption("อัปโหลดภาพก่อนแก้และหลังแก้จาก ChatGPT หรือโปรแกรมใดก็ได้ เพื่อเลื่อนเส้นเปรียบเทียบและซูม 100–1200%")
+    st.markdown("#### 🔍 ลากเส้นกลางภาพ ดูความคมชัดก่อน–หลัง")
+    st.caption("ทดลองลากเส้นสีขาวที่มีปุ่ม ↔ กลางภาพได้ทันที แล้วซูม 100–1200%")
+    # A usable visual appears on initial load, even before any user uploads.
+    demo_before, demo_after = make_quality_demo_previews()
+    st.markdown("**👇 ทดลองลากเส้นแบ่งในภาพนี้ได้เลย (ภาพสาธิต)**")
+    render_quality_preview(demo_before, demo_after,
+                           title="ตัวอย่างก่อน–หลัง • ใช้เมาส์หรือนิ้วลาก ↔",
+                           before_label="ก่อน • ภาพตัวอย่างเบลอ",
+                           after_label="หลัง • ภาพตัวอย่างคมชัด")
+    st.markdown("**📷 เปรียบเทียบภาพงานของคุณเอง**")
+    st.caption("อัปโหลดภาพต้นฉบับและภาพที่ปรับแล้ว 2 ไฟล์ จะมีเส้นลากแสดงใต้ช่องอัปโหลด")
     col_before, col_after = st.columns(2)
     with col_before:
         before_up = st.file_uploader(
@@ -680,18 +689,18 @@ def render_print_studio():
     st.markdown("### 🖨️ ธนศิลป์ Print Studio")
     st.caption("แก้ข้อความบนภาพแบบคลิก/ลากได้จริง พร้อมเครื่องมือขยายภาพและเตรียมงานพิมพ์เดิม")
     st.info("ภาพอัปโหลดจะผ่านเซิร์ฟเวอร์ของเว็บก่อนเปิดตัวแก้ไข กรุณาได้รับอนุญาตก่อนใช้งานภาพบุคคล")
-    st.markdown("**👇 เลือกเครื่องมือที่ต้องการได้จากรายการด้านล่าง**")
+    st.markdown("**👇 ต้องการเส้นลากก่อน–หลัง? เลือกรายการแรก 🔍 หรือใช้ลิงก์ตรงจากหน้าแรก**")
     mode = st.radio(
         "เลือกเครื่องมือในสตูดิโองานพิมพ์",
         [
-            "🖱️ ใหม่! แก้ข้อความบนภาพแบบคลิก / ลาก",
-            "🔍 ใหม่! พรีวิวลากเปรียบเทียบ / ซูม 1200%",
+            "🔍 ลากดูความคมชัด ก่อน–หลัง (มีตัวอย่างให้ลอง)",
+            "🖱️ แก้ข้อความบนภาพแบบคลิก / ลาก",
             "🔎 1. ขยายภาพ / DPI",
             "✏️ 2. แก้ข้อความบนภาพ (แบบเดิม)",
             "✂️ 3. สติกเกอร์ไดคัท",
             "🕯️ 4. ป้ายงานศพ / ภาพอาลัย",
         ],
-        key="studio_mode",
+        key="studio_mode_compare_default_v2",
         horizontal=False,
         label_visibility="collapsed",
     )
