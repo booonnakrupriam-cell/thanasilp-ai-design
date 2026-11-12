@@ -11,8 +11,13 @@ if st.query_params.get("studio") == "resize":
     st.title("🔎 ธนศิลป์ • อัพสเกลภาพ / ปรับความคม / ลากก่อน–หลัง")
     st.link_button("🏠 กลับหน้าเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
     try:
-        from print_studio import _tool_resize
-        _tool_resize()
+        # Streamlit can keep imported Python modules cached across page reruns.
+        # Re-import the current file so resize reflects the latest deployed commit.
+        import importlib
+        import print_studio
+        importlib.reload(print_studio)
+        st.caption("✅ รุ่นล่าสุด: ปรับขนาดไม่เสียรูปทรง | 150×200 → 100×200 | 12 พ.ย. 2569")
+        print_studio._tool_resize()
     except Exception:
         st.warning("เกิดปัญหาเปิดระบบอัพสเกลหลัก กำลังแสดงเครื่องมือเปรียบเทียบสำรอง กรุณาอย่าใช้พรีวิวสำรองแทนไฟล์พิมพ์")
         from print_preview import render_quality_from_images
@@ -34,8 +39,10 @@ if st.query_params.get("studio") == "compare":
     st.title("🔍 ธนศิลป์ • ลากเส้นดูความคมชัด ก่อน–หลัง")
     st.link_button("🏠 กลับหน้าเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
     try:
-        from print_studio import _tool_quality_comparison
-        _tool_quality_comparison()
+        import importlib
+        import print_studio
+        importlib.reload(print_studio)
+        print_studio._tool_quality_comparison()
     except Exception:
         # Independent comparison fallback, no advanced-editor dependencies.
         from PIL import Image, ImageOps
@@ -257,8 +264,10 @@ with tab_graphic:
 
 with tab_print_studio:
     try:
-        from print_studio import render_print_studio
-        render_print_studio()
+        import importlib
+        import print_studio
+        importlib.reload(print_studio)
+        print_studio.render_print_studio()
     except Exception:
         st.error("มีปัญหาโหลดเครื่องมือสตูดิโอบางส่วน แต่หน้าเว็บและหมวดสร้างคำสั่ง AI ยังใช้ได้ครับ")
         st.link_button("🔍 เปิดเครื่องมือลากเส้นดูภาพก่อน–หลัง", "https://thanasin-ai-design.streamlit.app/?studio=compare")
