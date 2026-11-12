@@ -396,6 +396,20 @@ def _resize_preset_preview(image, preset):
                           key="studio_resize_size_choice_" + str(size_index),
                           use_container_width=True,
                           on_click=_set_resize_size_preset, args=(size_label,))
+    st.markdown("#### 📐 เปลี่ยนขนาดป้ายโดยไม่เสียรูปทรง")
+    st.caption("ตัวอย่าง: จากป้าย 150 × 200 ซม. → 100 × 200 ซม. สามารถคงคนและตัวหนังสือไม่ให้บีบ/ยืด โดยเลือกเติมพื้นที่ว่างหรือครอป")
+    st.button("✅ ลองตัวอย่าง 150 × 200 → 100 × 200 ซม.",
+              key="studio_resize_example_ratio_v4", use_container_width=True,
+              on_click=_set_resize_150x200_to_100x200)
+    origin_col1, origin_col2 = st.columns(2)
+    with origin_col1:
+        source_width_cm = st.number_input("กว้างต้นฉบับ (ซม.)", 1.0, 600.0, 150.0, 1.0,
+                                         key="studio_resize_source_width_v4")
+    with origin_col2:
+        source_height_cm = st.number_input("สูงต้นฉบับ (ซม.)", 1.0, 600.0, 200.0, 1.0,
+                                          key="studio_resize_source_height_v4")
+    st.caption("ขนาดต้นฉบับใช้ประกอบการเปรียบเทียบอัตราส่วน ระบบวางภาพโดยยึดสัดส่วนพิกเซลจริงของไฟล์เพื่อป้องกันการบิดรูป")
+
     c1, c2, c3 = st.columns(3)
     with c1:
         width_cm = st.number_input("กว้าง (ซม.)", 1.0, 600.0, 100.0, 1.0, key="studio_resize_width")
@@ -418,8 +432,9 @@ def _resize_preset_preview(image, preset):
         sharpen = st.slider("เพิ่มความคมชัด", 0.0, 2.0, 0.6, 0.1,
                             key="studio_resize_edge_strength_v2")
     with p2:
-        framing = st.selectbox("รักษาสัดส่วนและรูปร่างฟอนต์", [
+        framing = st.selectbox("วิธีวางภาพใหม่ (รักษารูปทรงเดิม)", [
             "คงสัดส่วนภาพเดิม (ไม่ยืดตัวหนังสือ)",
+            "คงภาพครบ • เติมฉากหลังเบลอ",
             "เต็มกรอบแบบครอป (ไม่บิดอักษร)",
             "ยืดให้เต็มกรอบ (อาจทำให้ตัวหนังสือเบี้ยว)",
         ], key="studio_resize_framing_v2")
@@ -434,6 +449,50 @@ def _resize_preset_preview(image, preset):
         cmyk = st.checkbox("ส่งออก TIFF แบบ CMYK (ไม่มี ICC โปรไฟล์เฉพาะเครื่องพิมพ์)",
                            value=False, disabled=(fmt != "TIFF"), key="studio_resize_cmyk")
 
+    placement_c1, placement_c2, placement_c3 = st.columns(3)
+    with placement_c1:
+        align_x = st.slider("จัดวางซ้าย–ขวา (%)", 0, 100, 50, 5,
+                            key="studio_resize_align_x_v4")
+    with placement_c2:
+        align_y = st.slider("จัดวางบน–ล่าง (%)", 0, 100, 50, 5,
+                            key="studio_resize_align_y_v4")
+    with placement_c3:
+        bg_color = st.color_picker("สีพื้นส่วนที่เติม", "#FFFFFF",
+                                   key="studio_resize_bg_color_v4",
+                                   disabled=framing != "คงสัดส่วนภาพเดิม (ไม่ยืดตัวหนังสือ)")
+    if framing == "ยืดให้เต็มกรอบ (อาจทำให้ตัวหนังสือเบี้ยว)":
+        st.error("โหมดนี้ยืดภาพคนและตัวอักษรได้ ไม่แนะนำสำหรับงานที่ต้องรักษาสัดส่วนเดิม")
+    elif framing == "เต็มกรอบแบบครอป (ไม่บิดอักษร)":
+        st.warning("โหมดครอปไม่บิดภาพ แต่บางส่วนริมภาพจะถูกตัดออก โปรดตรวจชื่อและลายกรอบก่อนพิมพ์")
+    elif framing == "คงภาพครบ • เติมฉากหลังเบลอ":
+        st.info("ภาพต้นฉบับยังอยู่ครบ ระบบเติมพื้นที่นอกกรอบด้วยสำเนาฉากหลังที่เบลอ ไม่ใช่ AI สร้างส่วนที่ขาด")
+    else:
+        st.info("คงภาพต้นฉบับทั้งหมดแบบไม่บีบ/ยืด หากอัตราส่วนต่างกันจะมีพื้นที่สีพื้นเพิ่มรอบภาพ")
+
+    if image is not None:
+        actual_ratio = image.width / max(1, image.height)
+        declared_ratio = source_width_cm / source_height_cm
+        target_ratio = width_cm / height_cm
+        if abs(actual_ratio / declared_ratio - 1) > .03:
+            st.warning(
+                "ขนาดต้นฉบับที่กรอกไม่ตรงกับอัตราส่วนพิกเซลของไฟล์ที่อัปโหลด "
+                "ระบบจะรักษาสัดส่วนตามภาพจริง ไม่ยืดตามตัวเลขที่กรอก"
+            )
+        if abs(actual_ratio / target_ratio - 1) > .001:
+            if framing in ("คงสัดส่วนภาพเดิม (ไม่ยืดตัวหนังสือ)", "คงภาพครบ • เติมฉากหลังเบลอ"):
+                placed_w_cm = min(width_cm, height_cm * actual_ratio)
+                placed_h_cm = placed_w_cm / actual_ratio
+                st.caption(
+                    f"เมื่อใส่รูปครบในป้ายใหม่ ขนาดส่วนภาพประมาณ {placed_w_cm:.1f} × {placed_h_cm:.1f} ซม. "
+                    "โดยไม่เสียรูปทรง ส่วนพื้นที่ที่เหลือจะเป็นพื้นเสริมหรือฉากเบลอ"
+                )
+            elif framing == "เต็มกรอบแบบครอป (ไม่บิดอักษร)":
+                lost = ((1 - target_ratio / actual_ratio) * 100
+                        if actual_ratio > target_ratio
+                        else (1 - actual_ratio / target_ratio) * 100)
+                where = "ด้านซ้าย–ขวา" if actual_ratio > target_ratio else "ด้านบน–ล่าง"
+                st.caption(f"ต้องครอปพื้นที่ต้นฉบับรวมประมาณ {max(0, lost):.1f}% จาก{where} เพื่อเต็มป้ายใหม่")
+
     wpx, hpx, effective_dpi = _target_pixels(width_cm, height_cm, dpi)
     st.caption(f"ขนาดส่งออก {wpx:,} × {hpx:,} พิกเซล • DPI ใช้ได้จริงประมาณ {effective_dpi:g}")
     if effective_dpi < dpi:
@@ -442,15 +501,16 @@ def _resize_preset_preview(image, preset):
 
     st.markdown("### 🔍 ลากเส้น ↔ ดูภาพก่อน–หลัง (อยู่ในโหมดอัพสเกล)")
     if image is not None:
-        st.caption("👇 **ลากปุ่ม ↔ ที่เส้นขาวกลางภาพ** เพื่อเทียบภาพต้นฉบับกับโหมดปรับคมที่เลือก ปรับตัวเลือกด้านบนแล้วดูผลใหม่ได้ทันที")
+        st.caption("👇 **ลากปุ่ม ↔ บนเส้นสีขาว** เพื่อเทียบภาพวางแบบเดิมกับการจัดวางใหม่ตามขนาดและวิธีที่เลือก")
         with st.spinner("กำลังประมวลผลภาพก่อน–หลังขนาดพรีวิว..."):
             before_preview, after_preview = _live_resize_comparison(
-                image, (wpx, hpx), framing, mode, sharpen, smooth)
+                image, (wpx, hpx), framing, mode, sharpen, smooth,
+                bg_color, align_x, align_y)
         render_quality_preview(
             before_preview, after_preview,
             title="ก่อน ↔ หลัง • ปรับเส้นคมและส่วนโค้งตัวหนังสือ",
-            before_label="ก่อน • ภาพต้นฉบับที่ขยายแบบธรรมดา",
-            after_label="หลัง • ปรับความคมตามโหมดที่เลือก",
+            before_label="ก่อน • วางภาพเดิมคงสัดส่วน",
+            after_label="หลัง • ปรับขนาด/จัดวางใหม่ไม่บิดรูป",
         )
     else:
         st.info("อัปโหลดภาพด้านบนเพื่อเปรียบเทียบไฟล์ของคุณเอง หรือทดลองลากเส้นกลางภาพตัวอย่างด้านล่าง")
@@ -460,7 +520,7 @@ def _resize_preset_preview(image, preset):
 
     fingerprint = (hashlib.sha256(up.getvalue()).hexdigest() if up is not None else "")
     settings = (fingerprint, wpx, hpx, effective_dpi, framing, mode, sharpen,
-                smooth, fmt, cmyk)
+                smooth, fmt, cmyk, bg_color, align_x, align_y)
     if st.button("🚀 สร้างไฟล์อัพสเกล / ปรับคม พร้อมพิมพ์", use_container_width=True,
                  key="studio_resize_generate"):
         if image is None:
@@ -468,7 +528,8 @@ def _resize_preset_preview(image, preset):
         else:
             with st.spinner("กำลังขยายภาพและปรับขอบตัวอักษรสำหรับดาวน์โหลด..."):
                 out = _resize_print_image(
-                    image, (wpx, hpx), framing, Image.Resampling.LANCZOS)
+                    image, (wpx, hpx), framing, Image.Resampling.LANCZOS,
+                    bg_color, align_x, align_y)
                 out = _apply_print_edge_mode(out, mode, sharpen, smooth)
                 binary = _image_bytes(out, fmt, effective_dpi, cmyk)
                 st.session_state["studio_resize_result_v2"] = {
