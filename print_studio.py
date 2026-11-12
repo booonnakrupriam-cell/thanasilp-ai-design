@@ -257,14 +257,18 @@ def _apply_print_edge_mode(image, mode, strength, curve_smooth):
     return result
 
 
-def _live_resize_comparison(image, target_size, framing, mode, strength, smooth):
-    """Apply selected image enhancement to a bounded preview from the uploaded image."""
+def _live_resize_comparison(image, target_size, framing, mode, strength, smooth,
+                            bg_color="#FFFFFF", align_x=50, align_y=50):
+    """Preview a non-distorting original arrangement against the selected new layout."""
     tw, th = target_size
     ratio = min(1, 1700 / max(1, tw), 1050 / max(1, th),
                 math.sqrt(1_550_000 / max(1, tw * th)))
     size = (max(1, int(tw * ratio)), max(1, int(th * ratio)))
-    before = _resize_print_image(image, size, framing, Image.Resampling.BILINEAR)
-    after = _resize_print_image(image, size, framing, Image.Resampling.LANCZOS)
+    before = _resize_print_image(
+        image, size, "คงสัดส่วนภาพเดิม (ไม่ยืดตัวหนังสือ)",
+        Image.Resampling.BILINEAR, bg_color, 50, 50)
+    after = _resize_print_image(
+        image, size, framing, Image.Resampling.LANCZOS, bg_color, align_x, align_y)
     after = _apply_print_edge_mode(after, mode, strength, smooth)
     return prepare_quality_previews(before, after)
 
@@ -306,6 +310,17 @@ def _set_resize_size_preset(label):
     width, height = SIGN_SIZE_PRESETS[label]
     st.session_state["studio_resize_width"] = width
     st.session_state["studio_resize_height"] = height
+
+
+def _set_resize_150x200_to_100x200():
+    """Example layout: target aspect differs, so use fitting rather than distortion."""
+    st.session_state["studio_resize_source_width_v4"] = 150.0
+    st.session_state["studio_resize_source_height_v4"] = 200.0
+    st.session_state["studio_resize_width"] = 100.0
+    st.session_state["studio_resize_height"] = 200.0
+    st.session_state["studio_resize_framing_v2"] = "คงภาพครบ • เติมฉากหลังเบลอ"
+    st.session_state["studio_resize_align_x_v4"] = 50
+    st.session_state["studio_resize_align_y_v4"] = 50
 
 
 def _apply_resize_dropdown_choice():
