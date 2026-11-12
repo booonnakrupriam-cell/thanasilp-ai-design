@@ -6,6 +6,38 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
+# Independent Smart Re-layout entry: does not depend on the large print-studio module.
+if st.query_params.get("studio") == "smart":
+    st.title("🧩 ธนศิลป์ • จัดองค์ประกอบป้ายใหม่ ไม่บิดรูปทรง")
+    st.link_button("🏠 กลับเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
+    try:
+        from io import BytesIO
+        from PIL import Image, ImageOps
+        from smart_relayout import render_smart_relayout
+        smart_upload = st.file_uploader(
+            "อัปโหลดภาพป้ายต้นฉบับ PNG / JPG / TIFF",
+            type=["png", "jpg", "jpeg", "tif", "tiff"],
+            key="smart_direct_upload",
+        )
+        source_image = None
+        if smart_upload is not None:
+            if smart_upload.size > 30 * 1024 * 1024:
+                st.error("ไฟล์ใหญ่เกิน 30 MB กรุณาลดขนาดไฟล์")
+            else:
+                try:
+                    with Image.open(BytesIO(smart_upload.getvalue())) as input_image:
+                        if input_image.width * input_image.height > 35_000_000:
+                            st.error("รูปต้นฉบับใหญ่เกิน 35 ล้านพิกเซล กรุณาลดขนาดก่อน")
+                        else:
+                            source_image = ImageOps.exif_transpose(input_image).convert("RGBA")
+                except (OSError, ValueError):
+                    st.error("เปิดภาพไม่ได้ กรุณาลองไฟล์ PNG, JPG หรือ TIFF ที่สมบูรณ์")
+        render_smart_relayout(source_image)
+    except Exception as exc:
+        st.error("เครื่องมือจัดองค์ประกอบใหม่มีข้อผิดพลาด: " + type(exc).__name__)
+        st.caption("เครื่องมือสร้างคำสั่งและสตูดิโอเดิมยังเปิดจากหน้าหลักได้")
+    st.stop()
+
 # Direct entry to resize/DPI, sharpening presets and an immediately visible before/after slider.
 if st.query_params.get("studio") == "resize":
     st.title("🔎 ธนศิลป์ • อัพสเกลภาพ / ปรับความคม / ลากก่อน–หลัง")
@@ -182,6 +214,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # An obvious entry point independent of which Streamlit tab is active.
+st.link_button(
+    "🧩 จัดองค์ประกอบใหม่ทั้งงาน • ปรับขนาดไม่บีบวงกลม/ตัวหนังสือ",
+    "https://thanasin-ai-design.streamlit.app/?studio=smart",
+    use_container_width=True,
+    type="primary",
+)
+st.caption("แบบใหม่: เลือกจัดบล็อกภาพจริงโดยไม่ยืด หรือสร้างคำสั่งให้ AI ออกแบบใหม่ทั้งงาน")
 st.link_button(
     "🔎 ขยายภาพ + เลือกรูปแบบปรับคม + ลากก่อน–หลัง",
     "https://thanasin-ai-design.streamlit.app/?studio=resize",
