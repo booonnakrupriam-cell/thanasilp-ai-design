@@ -187,20 +187,42 @@ def _preview(img, label=None):
     st.image(_small_preview(img), caption=label, use_container_width=True)
 
 
-def _resize_print_image(image, dest_size, framing, resample):
-    """Keep font and ornament shapes proportional unless user explicitly opts to stretch."""
-    if framing == "คงสัดส่วนภาพเดิม (ไม่ยืดตัวหนังสือ)":
-        fitted = ImageOps.contain(image, dest_size, method=resample)
-        background = ((255, 255, 255, 0) if image.getchannel("A").getextrema()[0] < 255
-                      else (255, 255, 255, 255))
-        canvas = Image.new("RGBA", dest_size, background)
-        canvas.alpha_composite(fitted, ((dest_size[0] - fitted.width) // 2,
-                                        (dest_size[1] - fitted.height) // 2))
-        return canvas
-    if framing == "เต็มกรอบแบบครอป (ไม่บิดอักษร)":
-        return ImageOps.fit(image, dest_size, method=resample, centering=(.5, .5))
-    return image.resize(dest_size, resample)
+def _resize_print_image(image, dest_size, framing, resample,
+                        bg_color="#FFFFFF", align_x=50, align_y=50):
+    """Fit/extend/crop without changing the shapes of people, Thai glyphs or ornaments.
 
+    Never scale x/y independently except in the explicitly warned stretch mode.
+    """
+    width, height = dest_size
+    ax = max(0, min(100, int(align_x))) / 100
+    ay = max(0, min(100, int(align_y))) / 100
+    if framing == "ยืดให้เต็มกรอบ (อาจทำให้ตัวหนังสือเบี้ยว)":
+        return image.resize(dest_size, resample)
+    if framing == "เต็มกรอบแบบครอป (ไม่บิดอักษร)":
+        return ImageOps.fit(image, dest_size, method=resample, centering=(ax, ay))
+
+    # Contain always uses a SINGLE scale factor (width and height scale together).
+    fitted = ImageOps.contain(image.convert("RGBA"), dest_size, method=resample)
+    if framing == "คงภาพครบ • เติมฉากหลังเบลอ":
+        # The blurred background is a new background; it does not synthesize
+        # missing details or preserve the original design outside its bounds.
+        ratio = min(1.0, 760 / max(1, width), 760 / max(1, height))
+        small_size = (max(1, round(width * ratio)), max(1, round(height * ratio)))
+        original_rgb = Image.new("RGBA", image.size, "#FFFFFF")
+        original_rgb.alpha_composite(image.convert("RGBA"))
+        blurred = ImageOps.fit(original_rgb.convert("RGB"), small_size,
+                              method=Image.Resampling.LANCZOS, centering=(ax, ay))
+        blurred = blurred.filter(
+            ImageFilter.GaussianBlur(radius=max(4, min(small_size) / 22))
+        )
+        blurred = ImageEnhance.Brightness(blurred).enhance(0.76)
+        canvas = blurred.resize(dest_size, Image.Resampling.BILINEAR).convert("RGBA")
+    else:
+        canvas = Image.new("RGBA", dest_size, bg_color)
+    x = round((width - fitted.width) * ax)
+    y = round((height - fitted.height) * ay)
+    canvas.alpha_composite(fitted, (x, y))
+    return canvas
 
 def _apply_print_edge_mode(image, mode, strength, curve_smooth):
     """Enhance existing raster contours, preserving the original alpha and color balance.
