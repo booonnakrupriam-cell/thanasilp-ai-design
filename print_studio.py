@@ -91,10 +91,14 @@ def _font(size, font_upload=None):
         return None
 
 
+def _small_preview(img):
+    result = img.copy()
+    result.thumbnail((1100, 800), Image.Resampling.LANCZOS)
+    return result
+
+
 def _preview(img, label=None):
-    img_copy = img.copy()
-    img_copy.thumbnail((1100, 800), Image.Resampling.LANCZOS)
-    st.image(img_copy, caption=label, use_container_width=True)
+    st.image(_small_preview(img), caption=label, use_container_width=True)
 
 
 def _tool_resize():
@@ -194,7 +198,7 @@ def _tool_text():
                     d.multiline_text((x, y), content, font=font, fill=color,
                                      spacing=12, stroke_width=stroke, stroke_fill=stroke_color)
                     st.session_state["studio_text_result"] = _image_bytes(out)
-                    st.session_state["studio_text_preview"] = out.copy()
+                    st.session_state["studio_text_preview"] = _small_preview(out)
     if "studio_text_result" in st.session_state:
         if "studio_text_preview" in st.session_state:
             _preview(st.session_state["studio_text_preview"], "ตัวอย่างภาพล่าสุด")
@@ -253,7 +257,8 @@ def _tool_sticker():
     im = _open_image(up, max_pixels=16_000_000)
     c1, c2, c3 = st.columns(3)
     with c1:
-        bg_choice = st.selectbox("พื้นหลัง", ["ใช้ความโปร่งใสเดิม", "อัตโนมัติจากมุมซ้ายบน", "ขาว", "ดำ"], key="studio_sticker_bg")
+        bg_index = 0 if im is not None and im.getchannel("A").getextrema()[0] < 255 else 1
+        bg_choice = st.selectbox("พื้นหลัง", ["ใช้ความโปร่งใสเดิม", "อัตโนมัติจากมุมซ้ายบน", "ขาว", "ดำ"], index=bg_index, key="studio_sticker_bg")
     with c2:
         threshold = st.slider("ความไวในการลบพื้นหลัง", 0, 100, 30, key="studio_sticker_threshold")
     with c3:
@@ -307,7 +312,7 @@ def _tool_sticker():
                         "single": _image_bytes(sticker),
                         "guide": _image_bytes(_sticker_guide(sticker)),
                         "sheet": _image_bytes(sheet_img, dpi=actual_dpi),
-                        "preview": sheet_img.copy(),
+                        "preview": _small_preview(sheet_img),
                         "count": cols * rows,
                     }
     result = st.session_state.get("studio_sticker_result")
@@ -403,7 +408,7 @@ def _make_memorial(photo, name, born_text, died_text, age_label, subtitle,
     else:
         box = (int(wpx * .18), int(hpx * .11), int(wpx * .82), int(hpx * .58))
         tx, tw = wpx // 2, int(wpx * .84)
-        text_y = int(hpx * .62)
+        text_y = int(hpx * .60)
         base = min(wpx, hpx)
     d.rectangle(box, fill=panel, outline=ink, width=max(2, line))
     x1, y1, x2, y2 = box
@@ -424,7 +429,7 @@ def _make_memorial(photo, name, born_text, died_text, age_label, subtitle,
         details.append("สิริอายุ " + age_label + " ปี")
     if use_thai:
         details = [_thai_digits(v) for v in details]
-    line_gap = int(base * (.095 if landscape else .077))
+    line_gap = int(base * (.095 if landscape else .063))
     _draw_center(d, heading, tx, text_y, tw, int(base * .055), ink, font_upload)
     _draw_center(d, name or "ชื่อผู้วายชนม์", tx, text_y + line_gap, tw,
                  int(base * .075), ink, font_upload)
@@ -494,7 +499,7 @@ def _tool_memorial():
                 poster = _make_memorial(photo, name, born, died, age, subtitle,
                                         heading, template, wpx, hpx, font_upload, use_thai)
                 st.session_state["studio_memorial_result"] = _image_bytes(poster, dpi=effective_dpi)
-                st.session_state["studio_memorial_preview"] = poster.copy()
+                st.session_state["studio_memorial_preview"] = _small_preview(poster)
     if "studio_memorial_result" in st.session_state:
         _preview(st.session_state["studio_memorial_preview"], "ตัวอย่างป้ายล่าสุด")
         _download("⬇️ ดาวน์โหลดป้ายอาลัย PNG",
