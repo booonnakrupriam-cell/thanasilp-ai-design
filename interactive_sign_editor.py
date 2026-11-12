@@ -21,6 +21,7 @@ HTML = """
   <div class="te-toolbar" aria-label="เครื่องมือแก้ไขภาพ">
     <button type="button" data-editor-mode="select" class="active">🖱️ เลือก / ลากย้าย</button>
     <button type="button" data-editor-mode="add">🔤 วางข้อความใหม่</button>
+    <button type="button" data-editor-mode="ocr">🔎 คลิกกรอบ OCR</button>
     <button type="button" data-editor-mode="cover">🧽 ลากกรอบทับคำผิด</button>
     <button type="button" data-editor-mode="sample">🎨 ดูดสีพื้น</button>
     <button type="button" data-editor-mode="pan">✋ เลื่อนภาพ</button>
