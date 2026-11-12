@@ -413,20 +413,20 @@ def _thai_digits(text):
     return str(text).translate(str.maketrans("0123456789", "๐๑๒๓๔๕๖๗๘๙"))
 
 
-def _fit_font(text, target_width, desired_size, font_upload):
+def _fit_font(text, target_width, desired_size, font_upload, font_choice=None, stroke=0):
     size = max(12, desired_size)
     while size >= 12:
-        font = _font(size, font_upload)
+        font = _font(size, font_upload, font_choice)
         if font is None:
             return None
         try:
             span = ImageDraw.Draw(Image.new("RGB", (1, 1))).textbbox((0, 0), text, font=font)
-            if span[2] - span[0] <= target_width:
+            if span[2] - span[0] + 2 * stroke <= target_width:
                 return font
         except (UnicodeError, OSError):
             return None
         size = int(size * 0.88) if size > 14 else size - 1
-    return _font(12, font_upload)
+    return _font(12, font_upload, font_choice)
 
 
 def _gradient(w, h, top, bottom):
@@ -441,19 +441,23 @@ def _gradient(w, h, top, bottom):
     return canvas
 
 
-def _draw_center(draw, text, cx, y, max_width, size, color, font_upload):
+def _draw_center(draw, text, cx, y, max_width, size, color, font_upload,
+                 font_choice=None, stroke=0, stroke_color="#000000"):
     if not text:
         return
-    font = _fit_font(text, max_width, size, font_upload)
+    font = _fit_font(text, max_width, size, font_upload, font_choice, stroke)
     if font is None:
         return
     bounds = draw.textbbox((0, 0), text, font=font)
     x = round(cx - (bounds[2] - bounds[0]) / 2)
-    draw.text((x, y), text, font=font, fill=color)
+    # stroke_width follows each font glyph's true curves; never stretch the font.
+    draw.text((x, y), text, font=font, fill=color,
+              stroke_width=stroke, stroke_fill=stroke_color)
 
 
 def _make_memorial(photo, name, born_text, died_text, age_label, subtitle,
-                   heading, palette, wpx, hpx, font_upload, use_thai):
+                   heading, palette, wpx, hpx, font_upload, use_thai,
+                   font_choice=None, text_stroke=0, text_stroke_color="#000000"):
     themes = {
         "ฟ้าขาวสุภาพ": ("#F5FBFF", "#B6D6F5", "#173D69", "#FFFFFF"),
         "ดำทองเรียบหรู": ("#18171D", "#38303D", "#F3D7A0", "#29232D"),
@@ -487,7 +491,8 @@ def _make_memorial(photo, name, born_text, died_text, age_label, subtitle,
         d = ImageDraw.Draw(canvas)
     else:
         _draw_center(d, "พื้นที่ใส่รูป", (x1 + x2) // 2, (y1 + y2) // 2,
-                     x2 - x1 - 24, int(base * .04), ink, font_upload)
+                     x2 - x1 - 24, int(base * .04), ink, font_upload,
+                     font_choice, text_stroke, text_stroke_color)
     details = []
     if born_text.strip():
         details.append("ชาตะ " + born_text.strip())
@@ -498,16 +503,20 @@ def _make_memorial(photo, name, born_text, died_text, age_label, subtitle,
     if use_thai:
         details = [_thai_digits(v) for v in details]
     line_gap = int(base * (.095 if landscape else .063))
-    _draw_center(d, heading, tx, text_y, tw, int(base * .055), ink, font_upload)
+    _draw_center(d, heading, tx, text_y, tw, int(base * .055), ink, font_upload,
+                     font_choice, text_stroke, text_stroke_color)
     _draw_center(d, name or "ชื่อผู้วายชนม์", tx, text_y + line_gap, tw,
-                 int(base * .075), ink, font_upload)
+                 int(base * .075), ink, font_upload,
+                     font_choice, text_stroke, text_stroke_color)
     for n, detail in enumerate(details):
         _draw_center(d, detail, tx, text_y + (n + 2) * line_gap,
-                     tw, int(base * .039), ink, font_upload)
+                     tw, int(base * .039), ink, font_upload,
+                     font_choice, text_stroke, text_stroke_color)
     if subtitle.strip():
         _draw_center(d, subtitle.strip(), tx,
                      text_y + (len(details) + 2) * line_gap,
-                     tw, int(base * .031), ink, font_upload)
+                     tw, int(base * .031), ink, font_upload,
+                     font_choice, text_stroke, text_stroke_color)
     return canvas
 
 
@@ -515,7 +524,15 @@ def _tool_memorial():
     st.markdown("#### 4. ภาพอาลัย / ป้ายงานศพแบบกรอกข้อมูล")
     st.caption("เลือกแบบ ใส่ภาพและชื่อ คำนวณอายุ และแปลงตัวเลขไทย โดยไม่ต้องใช้ AI สร้างตัวสะกด")
     photo_upload = st.file_uploader("อัปโหลดภาพบุคคล (ถ้ามี)", type=["png", "jpg", "jpeg"], key="studio_memorial_upload")
+    memorial_fonts = _available_thai_fonts()
+    font_choice = st.selectbox("เลือกฟอนต์สำหรับป้ายอาลัย", list(memorial_fonts) or ["อัปโหลดฟอนต์ด้านล่าง"], key="studio_memorial_font_choice")
     font_upload = st.file_uploader("ฟอนต์ภาษาไทย TTF/OTF เพิ่มเติม (ไม่บังคับ)", type=["ttf", "otf"], key="studio_memorial_font")
+    mem_c1, mem_c2 = st.columns(2)
+    with mem_c1:
+        text_stroke = st.slider("ความหนาเส้นขอบตัวหนังสือ (px)", 0, 12, 1, key="studio_memorial_stroke")
+    with mem_c2:
+        text_stroke_color = st.color_picker("สีขอบตัวหนังสือ", "#FFFFFF", key="studio_memorial_stroke_color")
+    st.caption("ขอบเดินตามรูปทรงจริงของฟอนต์ไทย รวมถึงส่วนโค้งและวรรณยุกต์ ไม่บิดหรือยืดตัวอักษร")
     if not _system_thai_font() and font_upload is None:
         st.warning("หากไม่มีฟอนต์ไทยติดตั้งบนระบบ กรุณาอัปโหลดฟอนต์ไทย TTF/OTF")
     c1, c2 = st.columns(2)
@@ -565,7 +582,8 @@ def _tool_memorial():
             photo = _open_image(photo_upload)
             with st.spinner("กำลังจัดองค์ประกอบป้าย..."):
                 poster = _make_memorial(photo, name, born, died, age, subtitle,
-                                        heading, template, wpx, hpx, font_upload, use_thai)
+                                        heading, template, wpx, hpx, font_upload, use_thai,
+                                        font_choice, text_stroke, text_stroke_color)
                 st.session_state["studio_memorial_result"] = _image_bytes(poster, dpi=effective_dpi)
                 st.session_state["studio_memorial_preview"] = _small_preview(poster)
     if "studio_memorial_result" in st.session_state:
