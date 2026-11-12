@@ -18,8 +18,9 @@ if st.query_params.get("studio") == "resize":
         importlib.reload(print_studio)
         st.caption("✅ รุ่นล่าสุด: ปรับขนาดไม่เสียรูปทรง | 150×200 → 100×200 | 12 พ.ย. 2569")
         print_studio._tool_resize()
-    except Exception:
+    except Exception as exc:
         st.warning("เกิดปัญหาเปิดระบบอัพสเกลหลัก กำลังแสดงเครื่องมือเปรียบเทียบสำรอง กรุณาอย่าใช้พรีวิวสำรองแทนไฟล์พิมพ์")
+        st.error("รหัสข้อผิดพลาดของเครื่องมืออัพสเกล: " + type(exc).__name__ + " (ส่งภาพข้อความนี้มาได้ หากยังพบปัญหา)")
         from print_preview import render_quality_from_images
         from PIL import Image, ImageOps, ImageEnhance
         from io import BytesIO
