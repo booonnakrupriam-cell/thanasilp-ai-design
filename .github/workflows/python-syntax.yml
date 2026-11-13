@@ -28,11 +28,11 @@ jobs:
           from io import BytesIO
           from PIL import Image
           from template_studio import PRESETS, _poster, _actual_size, _card_image
-          assert len(PRESETS) >= 8
+          assert len(PRESETS) >= 14
           for name, preset in PRESETS.items():
               data = _card_image(name)
               with Image.open(BytesIO(data)) as thumb:
-                  assert thumb.size == (720, 420), (name, thumb.size)
+                  assert abs((thumb.width / thumb.height) / (preset["w"] / preset["h"]) - 1) < .025, (name, thumb.size)
               fields = {k: preset[k] for k in ("header", "title", "sub", "detail", "footer")}
               output = _poster(preset, fields, 1000, 600)
               assert output.size == (1000, 600), name
@@ -41,5 +41,6 @@ jobs:
               assert b.getbuffer().nbytes > 10000
           w,h,dpi=_actual_size(300, 100, 150)
           assert 0 < w*h <= 16000000
-          print("Template rendering and PNG generation: OK")
+          assert all(k in PRESETS for k in ("history_kathin","history_scholarship","history_memorial","history_sports"))
+          print("All historical and standard template previews and exports: OK")
           PY
