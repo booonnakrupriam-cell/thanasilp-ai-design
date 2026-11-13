@@ -100,77 +100,15 @@ def _gradient(w,h,start,end):
     return ImageOps.colorize(row,start,end).convert("RGBA")
 
 def _poster(pre,values,w,h,photo=None,show_photo=None):
-    w,h=int(w),int(h)
-    if w<100 or h<100 or w*h>19_000_000:
-        raise ValueError("Image dimensions outside allowed output range")
-    start,end,main,sub,accent=pre["colors"]
-    can=_gradient(w,h,start,end)
-    d=ImageDraw.Draw(can)
-    M=max(4,round(min(w,h)*.027))
-    edge=max(2,round(min(w,h)*.005))
-    # Decorative frames and ribbons form a complete usable template.
-    d.rounded_rectangle((M,M,w-M,h-M),radius=max(10,M*2),outline=accent,width=edge)
-    d.rounded_rectangle((M*1.8,M*1.8,w-M*1.8,h-M*1.8),radius=M,
-                        outline=accent,width=max(1,edge//3))
-    for sign in [-1,1]:
-        cx=int(w*(.09 if sign==-1 else .91))
-        cy=int(h*.18)
-        r=int(min(w,h)*.07)
-        _flower(d,cx,cy,r,accent,sub)
-        _flower(d,cx,round(h*.84),int(r*.58),accent,sub)
-    # Horizontal ornamental bands.
-    d.line((M*3,round(h*.32),w-M*3,round(h*.32)),fill=accent,width=max(2,edge//2))
-    d.line((M*3,round(h*.82),w-M*3,round(h*.82)),fill=accent,width=max(2,edge//2))
-    is_photo=pre["photo"] if show_photo is None else show_photo
-    portrait = w<h
-    if is_photo:
-        x1=int(w*(.075 if not portrait else .26))
-        x2=int(w*(.36 if not portrait else .74))
-        y1=int(h*(.36 if not portrait else .31))
-        y2=int(h*(.78 if not portrait else .59))
-        # Use a mask so photo retains natural proportions, no stretched faces.
-        d.rounded_rectangle((x1-edge,y1-edge,x2+edge,y2+edge),radius=M,fill=accent)
-        d.rounded_rectangle((x1,y1,x2,y2),radius=M,fill="#EDF4FA")
-        if photo is not None:
-            fitted=ImageOps.fit(photo.convert("RGB"),(x2-x1,y2-y1),
-                                method=Image.Resampling.LANCZOS,centering=(.5,.32))
-            mask=Image.new("L",fitted.size,0)
-            ImageDraw.Draw(mask).rounded_rectangle((0,0,fitted.width-1,fitted.height-1),
-                                                     radius=max(1,M-edge),fill=255)
-            can.paste(fitted,(x1,y1),mask)
-        else:
-            d=ImageDraw.Draw(can)
-            d.ellipse((x1+(x2-x1)*.37,y1+(y2-y1)*.13,x1+(x2-x1)*.63,y1+(y2-y1)*.43),
-                      fill="#9EB6D0")
-            d.rounded_rectangle((x1+(x2-x1)*.2,y1+(y2-y1)*.47,
-                                 x1+(x2-x1)*.8,y1+(y2-y1)*.9),
-                                radius=M,fill="#9EB6D0")
-    d=ImageDraw.Draw(can)
-    px,tw=(w*.67,w*.51) if is_photo and not portrait else (w*.5,w*.84)
-    if is_photo and portrait:
-        top_y=.13; title_y=.24; sub_y=.64; detail_y=.72
-    else:
-        top_y=.18; title_y=.43; sub_y=.60; detail_y=.70
-    if pre["cat"]=="ป้ายอาลัย / งานศพ" and portrait:
-        title_y=.25
-    base=min(w,h)
-    tstroke=max(0,round(base*.002))
-    _paint_text(d,values.get("header",""),w*.5,h*top_y,w*.77,h*.105,base*.077,
-                sub,main,pre["serif"])
-    _paint_text(d,values.get("title",""),px,h*title_y,tw,h*.17,base*.13,
-                main,start,pre["serif"],stroke=tstroke)
-    _paint_text(d,values.get("sub",""),px,h*sub_y,tw,h*.105,base*.066,
-                sub,main,False)
-    _paint_text(d,values.get("detail",""),px,h*detail_y,tw,h*.125,base*.046,
-                sub,main,False)
-    _paint_text(d,values.get("footer",""),w*.5,h*.91,w*.82,h*.10,base*.05,
-                main,start,False)
-    return can
+    """Render the improved high-resolution themed sign directly from editable fields."""
+    from template_art import render_poster
+    return render_poster(pre,values,w,h,photo,show_photo)
+
 
 import math
 
 @st.cache_data(show_spinner=False,max_entries=50)
-def _card_image(preset_id):
+def _card_image(preset_id, design_version=3):
     p=PRESETS[preset_id]
     vals={fld:p[fld] for fld in ("header","title","sub","detail","footer")}
     im=_poster(p,vals,720,420)
@@ -196,14 +134,14 @@ def _actual_size(w_cm,h_cm,dpi):
     return (max(1,int(pixels_x*factor)), max(1,int(pixels_y*factor)), round(dpi*factor,2))
 
 def render_template_studio():
-    st.markdown("### 🎨 เลือกแบบป้ายสำเร็จรูป → พิมพ์ข้อความเอง → ดาวน์โหลด")
-    st.caption("แบบป้ายจริงที่แก้ข้อความไทยได้ทันที ไม่ต้องส่งไป AI • มีแบบงานวัด งานศพ โรงเรียน ร้านค้าและกีฬา")
+    st.markdown("### ✨ แบบป้ายสวยพร้อมใช้ • เลือกแบบ → แก้ข้อความ → ดาวน์โหลด")
+    st.caption("ปรับดีไซน์ใหม่: กรอบทอง ริบบิ้น แสงเงา ลวดลายไทย และฟอนต์หัวเรื่องเด่น แยกสไตล์ตามงาน • พิมพ์แก้ได้ทันทีโดยไม่ต้องใช้ AI")
     if "sample_sign_selected" not in st.session_state:
         _choose("temple_gold")
     selected=st.session_state["sample_sign_selected"]
     category=st.selectbox("เลือกหมวดแบบป้าย",CATEGORIES,key="sample_sign_category")
     visible=[k for k,v in PRESETS.items() if category=="ทั้งหมด" or v["cat"]==category]
-    st.markdown("**👇 คลิกเลือกรูปแบบจากตัวอย่าง**")
+    st.markdown("**👇 เลือกป้ายที่ชอบจากแบบสวยสำเร็จรูป (คลิกใต้รูป)**")
     for i in range(0,len(visible),2):
         cols=st.columns(2)
         for j,key in enumerate(visible[i:i+2]):
