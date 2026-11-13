@@ -6,6 +6,17 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
+# Standalone sample sign gallery; also available inside the unified workshop.
+if st.query_params.get("studio") == "templates":
+    st.title("🎨 ธนศิลป์ • เลือกแบบป้ายแล้วพิมพ์ข้อความเอง")
+    st.link_button("🏠 กลับเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
+    try:
+        from template_studio import render_template_studio
+        render_template_studio()
+    except Exception as exc:
+        st.error("เครื่องมือแบบป้ายสำเร็จรูปยังเปิดไม่ได้: " + type(exc).__name__)
+    st.stop()
+
 # Unified homepage entry. Existing ?studio=smart and ?studio=resize links remain valid.
 if st.query_params.get("studio") == "workshop":
     st.title("🖼️ ธนศิลป์ • ปรับขนาด / อัพสเกล / ให้ AI ออกแบบใหม่")
@@ -13,13 +24,20 @@ if st.query_params.get("studio") == "workshop":
     unified_mode = st.radio(
         "เลือกการทำงานในหัวข้อเดียว",
         [
+            "🎨 เลือกแบบป้ายสำเร็จรูป แล้วพิมพ์ข้อความเอง",
             "🛡️ ปรับขนาดไม่ตัดภาพ / ให้ AI จัดองค์ประกอบใหม่",
             "🔎 อัพสเกล ปรับคม และลากเปรียบเทียบก่อน–หลัง",
         ],
-        key="unified_design_mode_v1",
+        key="unified_design_mode_v2",
         horizontal=False,
     )
-    if unified_mode.startswith("🛡️"):
+    if unified_mode.startswith("🎨"):
+        try:
+            from template_studio import render_template_studio
+            render_template_studio()
+        except Exception as exc:
+            st.error("โหลดแบบป้ายสำเร็จรูปไม่ได้: " + type(exc).__name__)
+    elif unified_mode.startswith("🛡️"):
         try:
             from io import BytesIO
             from PIL import Image, ImageOps
@@ -272,12 +290,12 @@ st.markdown("""
 
 # One unified homepage entry for both existing image workflows.
 st.link_button(
-    "🖼️ ปรับขนาดไม่ตัดภาพ / อัพสเกลปรับคม / AI ออกแบบใหม่",
+    "🎨 เลือกแบบป้าย พิมพ์ข้อความเอง / ปรับขนาด / อัพสเกล / AI",
     "https://thanasin-ai-design.streamlit.app/?studio=workshop",
     use_container_width=True,
     type="primary",
 )
-st.caption("เข้าเครื่องมือเดียว แล้วเลือกได้ว่าจะจัดภาพไม่เสียรูปทรง ให้ AI ออกแบบใหม่ หรือขยายภาพปรับคมพร้อมลากก่อน–หลัง")
+st.caption("คลิกเลือกตัวอย่างป้ายแล้วกรอกข้อความได้ทันที รวมเครื่องมือปรับขนาด อัพสเกล และส่ง AI ไว้ในหัวข้อเดียว")
 
 def section_title(title):
     st.markdown(f'<div class="form-section-title">{html.escape(title)}</div>', unsafe_allow_html=True)
