@@ -189,6 +189,24 @@ def _history_memorial(pre,v,w,h,photo=None):
             flower(d,x,y,u*.105,pink="#E4DDCA",white="#FFFFFF")
     photo_frame(can,photo,w,h,"memorial","#D4A54C")
     d=ImageDraw.Draw(can)
+    if w < h:
+        # Portrait jobs need vertically stacked text so the name NEVER crosses a face.
+        d.rounded_rectangle((w*.105,h*.623,w*.895,h*.879),
+                            radius=u*.060,fill="#FFF8E9",outline="#CFA13C",
+                            width=max(2,int(u*.013)))
+        layered_text(d,v["header"],w*.50,h*.173,w*.75,h*.080,u*.074,
+                     "#634325","#FFEEB9",formal=True)
+        layered_text(d,v["title"],w*.50,h*.681,w*.72,h*.073,u*.115,
+                     "#613B23","#FFF2C8",formal=True)
+        layered_text(d,v["sub"],w*.50,h*.766,w*.70,h*.054,u*.059,
+                     "#583E2C","#FFF6DB",formal=True)
+        layered_text(d,v["detail"],w*.50,h*.840,w*.70,h*.071,u*.051,
+                     "#63482B","#FFF7E7",formal=True)
+        ribbon(d,w*.12,h*.902,w*.88,h*.961,"#8E6841",
+               "#F7E4AB","#FFE6A1")
+        layered_text(d,v["footer"],w*.50,h*.929,w*.67,h*.045,u*.042,
+                     "#FFF3DA","#73502E",formal=True)
+        return can
     # Ivory gilded information plaque placed to the right of photo.
     d.rounded_rectangle((w*.35,h*.255,w*.95,h*.835),
                         radius=u*.064,fill="#FFF8E9",outline="#CFA13C",
