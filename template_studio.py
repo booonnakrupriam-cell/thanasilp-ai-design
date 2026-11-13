@@ -13,6 +13,7 @@ PRESETS = {
     # รูปแบบอ้างอิงจากงานที่เคยร่วมออกแบบกัน: วาดใหม่ ไม่ใช้รูปบุคคลจริงของลูกค้า
     "history_kathin": dict(
         name="✨ งานเก่า • กฐินฟ้าสดลายทอง", cat="งานวัด / งานบุญ",
+        inspiration="ฟ้าสดใส • กรอบทอง • เครื่องกฐิน • วัด • ดอกบัว",
         history="kathin_sky",
         colors=("#038ED9", "#FFFFFF", "#1138A2", "#FFFFFF", "#F4BF35"),
         header="วันที่ ๒๑ พฤศจิกายน ๒๕๖๙", title="กฐินสามัคคี",
@@ -21,7 +22,8 @@ PRESETS = {
         footer="ขอเชิญร่วมอนุโมทนาบุญกฐิน", photo=False,
         serif=True, w=300., h=100.),
     "history_scholarship": dict(
-        name="✨ งานเก่า • มอบทุนทองหรู", cat="งานวัด / งานบุญ",
+        name="✨ งานเก่า • มอบทุนทองหรู", cat="ราชการ / โรงเรียน",
+        inspiration="ม่านทอง • หัวเรื่องแดงทอง • แผ่นป้ายวันที่ • ดอกบัว",
         history="scholarship_gold",
         colors=("#FFF0BD", "#F1D9B1", "#9B1730", "#102A76", "#D8A23C"),
         header="ลูกหลานชาวตำบลตัวอย่าง", title="พิธีมอบทุนการศึกษา",
@@ -31,6 +33,7 @@ PRESETS = {
         serif=True, w=300., h=130.),
     "history_memorial": dict(
         name="✨ งานเก่า • อาลัยงาช้างทอง", cat="ป้ายอาลัย / งานศพ",
+        inspiration="ฉากงาช้าง • ซุ้มภาพสีทอง • ดอกไม้ขาว • ชื่อเด่น",
         history="memorial_ivory",
         colors=("#FFF8EC", "#E6CFA7", "#613D29", "#FFFFFF", "#D9AE4D"),
         header="ด้วยรักและอาลัย", title="คุณแม่ชื่อ นามสกุล",
@@ -40,6 +43,7 @@ PRESETS = {
         serif=True, w=150., h=100.),
     "history_sports": dict(
         name="✨ งานเก่า • กีฬาสีสดสนามฟ้า", cat="กีฬา / กิจกรรม",
+        inspiration="ริบบิ้นธงชาติ • ป้ายหัวเรื่องสีม่วงทอง • สนาม • ถ้วยรางวัล",
         history="sports_festival",
         colors=("#068BD2", "#D6EFFF", "#F9D451", "#FFFFFF", "#F3CB4A"),
         header="การแข่งขันกีฬาภายในโรงเรียน", title="กีฬาสีสามัคคี",
@@ -183,7 +187,7 @@ def _actual_size(w_cm,h_cm,dpi):
 
 def render_template_studio():
     st.markdown("### ✨ แบบป้ายสวยพร้อมใช้ • เลือกแบบ → แก้ข้อความ → ดาวน์โหลด")
-    st.caption("ปรับดีไซน์ใหม่: กรอบทอง ริบบิ้น แสงเงา ลวดลายไทย และฟอนต์หัวเรื่องเด่น แยกสไตล์ตามงาน • พิมพ์แก้ได้ทันทีโดยไม่ต้องใช้ AI")
+    st.caption(f"มีแบบป้ายทั้งหมด {len(PRESETS)} แบบ รวม 4 แบบอ้างอิงผลงานเก่าของร้าน • คลิกเลือกและแก้ข้อความได้ทันที ไม่ต้องใช้ AI")
     if "sample_sign_selected" not in st.session_state:
         _choose("history_kathin")
     selected=st.session_state["sample_sign_selected"]
@@ -200,6 +204,8 @@ def render_template_studio():
                 with st.container(border=True):
                     st.image(_card_image(key),use_container_width=True)
                     st.caption(p["name"]+" • "+p["cat"])
+                    if p.get("inspiration"):
+                        st.caption("อิงงานเก่า: "+p["inspiration"])
                     active=selected==key
                     st.button("✓ แบบที่เลือก" if active else "เลือกแบบนี้",
                               key="sample_sign_pick_"+key,
