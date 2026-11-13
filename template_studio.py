@@ -10,6 +10,43 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 PRESETS = {
+    # รูปแบบอ้างอิงจากงานที่เคยร่วมออกแบบกัน: วาดใหม่ ไม่ใช้รูปบุคคลจริงของลูกค้า
+    "history_kathin": dict(
+        name="✨ งานเก่า • กฐินฟ้าสดลายทอง", cat="งานวัด / งานบุญ",
+        history="kathin_sky",
+        colors=("#038ED9", "#FFFFFF", "#1138A2", "#FFFFFF", "#F4BF35"),
+        header="วันที่ ๒๑ พฤศจิกายน ๒๕๖๙", title="กฐินสามัคคี",
+        sub="ทอดถวาย ณ วัดตัวอย่าง",
+        detail="ตำบลตัวอย่าง อำเภอตัวอย่าง จังหวัดมุกดาหาร",
+        footer="ขอเชิญร่วมอนุโมทนาบุญกฐิน", photo=False,
+        serif=True, w=300., h=100.),
+    "history_scholarship": dict(
+        name="✨ งานเก่า • มอบทุนทองหรู", cat="งานวัด / งานบุญ",
+        history="scholarship_gold",
+        colors=("#FFF0BD", "#F1D9B1", "#9B1730", "#102A76", "#D8A23C"),
+        header="ลูกหลานชาวตำบลตัวอย่าง", title="พิธีมอบทุนการศึกษา",
+        sub="วันที่ ๙ พฤศจิกายน ๒๕๖๙",
+        detail="ณ สถานที่จัดงาน ตำบลตัวอย่าง จังหวัดมุกดาหาร",
+        footer="โดยคณะผู้จัดงานและภาคีเครือข่าย", photo=False,
+        serif=True, w=300., h=130.),
+    "history_memorial": dict(
+        name="✨ งานเก่า • อาลัยงาช้างทอง", cat="ป้ายอาลัย / งานศพ",
+        history="memorial_ivory",
+        colors=("#FFF8EC", "#E6CFA7", "#613D29", "#FFFFFF", "#D9AE4D"),
+        header="ด้วยรักและอาลัย", title="คุณแม่ชื่อ นามสกุล",
+        sub="ชาตะ ๑ มกราคม ๒๔๙๐",
+        detail="มรณะ ๑ พฤศจิกายน ๒๕๖๙\nสิริอายุ ๗๙ ปี",
+        footer="จากครอบครัวและญาติมิตร", photo=True,
+        serif=True, w=150., h=100.),
+    "history_sports": dict(
+        name="✨ งานเก่า • กีฬาสีสดสนามฟ้า", cat="กีฬา / กิจกรรม",
+        history="sports_festival",
+        colors=("#068BD2", "#D6EFFF", "#F9D451", "#FFFFFF", "#F3CB4A"),
+        header="การแข่งขันกีฬาภายในโรงเรียน", title="กีฬาสีสามัคคี",
+        sub="ร่วมแรง ร่วมใจ สร้างสุขภาพ",
+        detail="ณ สนามกีฬาโรงเรียนตัวอย่าง",
+        footer="อำเภอตัวอย่าง จังหวัดมุกดาหาร", photo=True,
+        serif=False, w=300., h=150.),
     "temple_gold": dict(name="กฐินน้ำเงินทอง", cat="งานวัด / งานบุญ", colors=("#082C76","#0741A5","#FFE39B","#FFFFFF","#F4BA3D"),
                         header="ขอเชิญร่วมงานบุญ", title="ทอดกฐินสามัคคี", sub="ประจำปี ๒๕๖๙", detail="ณ วัดศรีนาราม\nอำเภอนิคมคำสร้อย จังหวัดมุกดาหาร",
                         footer="ร่วมสืบสานงานบุญประเพณีไทย", photo=False, serif=True, w=300.,h=100.),
@@ -100,7 +137,10 @@ def _gradient(w,h,start,end):
     return ImageOps.colorize(row,start,end).convert("RGBA")
 
 def _poster(pre,values,w,h,photo=None,show_photo=None):
-    """Render the improved high-resolution themed sign directly from editable fields."""
+    """Render a prior-work-inspired composition or one of the established designs."""
+    if pre.get("history"):
+        from historical_sign_styles import render_historical
+        return render_historical(pre,values,w,h,photo,show_photo)
     from template_art import render_poster
     return render_poster(pre,values,w,h,photo,show_photo)
 
@@ -108,12 +148,20 @@ def _poster(pre,values,w,h,photo=None,show_photo=None):
 import math
 
 @st.cache_data(show_spinner=False,max_entries=50)
-def _card_image(preset_id, design_version=3):
+def _card_image(preset_id, design_version=4):
     p=PRESETS[preset_id]
     vals={fld:p[fld] for fld in ("header","title","sub","detail","footer")}
-    im=_poster(p,vals,720,420)
+    # Preview matches each source sign's true aspect ratio, not a forced 720×420.
+    w,h=float(p["w"]),float(p["h"])
+    if w>=h:
+        pw=900
+        ph=max(150,round(pw*h/w))
+    else:
+        ph=850
+        pw=max(250,round(ph*w/h))
+    im=_poster(p,vals,pw,ph)
     out=BytesIO()
-    im.convert("RGB").save(out,format="JPEG",quality=86)
+    im.convert("RGB").save(out,format="JPEG",quality=88,subsampling=0)
     return out.getvalue()
 
 def _choose(preset_id):
@@ -137,11 +185,13 @@ def render_template_studio():
     st.markdown("### ✨ แบบป้ายสวยพร้อมใช้ • เลือกแบบ → แก้ข้อความ → ดาวน์โหลด")
     st.caption("ปรับดีไซน์ใหม่: กรอบทอง ริบบิ้น แสงเงา ลวดลายไทย และฟอนต์หัวเรื่องเด่น แยกสไตล์ตามงาน • พิมพ์แก้ได้ทันทีโดยไม่ต้องใช้ AI")
     if "sample_sign_selected" not in st.session_state:
-        _choose("temple_gold")
+        _choose("history_kathin")
     selected=st.session_state["sample_sign_selected"]
     category=st.selectbox("เลือกหมวดแบบป้าย",CATEGORIES,key="sample_sign_category")
     visible=[k for k,v in PRESETS.items() if category=="ทั้งหมด" or v["cat"]==category]
-    st.markdown("**👇 เลือกป้ายที่ชอบจากแบบสวยสำเร็จรูป (คลิกใต้รูป)**")
+    st.markdown("**✨ 4 แบบแรกอ้างอิงสไตล์งานเก่าที่เคยออกแบบร่วมกัน**")
+    st.caption("แบบใหม่วาดจากลักษณะสี ฟอนต์ และการจัดวางของงานเก่า ไม่ได้นำภาพบุคคลหรือไฟล์ลูกค้าเก่ามาเผยแพร่")
+    st.markdown("**👇 คลิกเลือกแบบที่ชอบ แล้วเปลี่ยนข้อความของคุณเอง**")
     for i in range(0,len(visible),2):
         cols=st.columns(2)
         for j,key in enumerate(visible[i:i+2]):
