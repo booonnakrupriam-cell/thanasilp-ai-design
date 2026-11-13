@@ -280,9 +280,9 @@ def render_poster(pre,values,w,h,photo=None,show_photo=None):
     # Dynamic satin/layered background strips - protected text areas remain clean.
     if kind in ("temple","celebration","retail"):
         d.polygon([(0,0),(w*.26,0),(w*.04,h*.64),(0,h*.76)],
-                  fill=rgba("#FFFFFF",17))
+                  fill=mix(start,"#FFFFFF",.11))
         d.polygon([(w*.83,0),(w,0),(w,h*.73),(w*.97,h*.58)],
-                  fill=rgba("#FFFFFF",20))
+                  fill=mix(start,"#FFFFFF",.10))
         for i in range(3):
             yi=h*(.05+i*.028)
             d.line([(w*.37,yi),(w*.64,yi-h*.012)],fill=accent,
@@ -295,7 +295,7 @@ def render_poster(pre,values,w,h,photo=None,show_photo=None):
         for i in range(5):
             px=w*(.03+i*.17)
             d.polygon([(px,0),(px+w*.06,0),
-                       (px-w*.06,h),(px-w*.12,h)],fill=rgba("#FECF63",55))
+                       (px-w*.06,h),(px-w*.12,h)],fill=mix(start,"#FECF63",.25))
     # Frame and ornamental language specific to each type.
     gold=accent
     frame(d,w,h,gold,inner="#FFF8D6" if kind in ("temple","memorial") else sub,
@@ -367,6 +367,17 @@ def render_poster(pre,values,w,h,photo=None,show_photo=None):
              "#FFF9F0" if "ชมพู" in name else "#F7F9FF","#EAC258")
         ribbon(d,w*.19,h*.862,w*.81,h*.951,
                "#5D255C" if "ชมพู" in name else "#082D67","#EAC15A","#FFF1B4")
+    # Portrait memorial/ceremony: reserve an independent title plaque
+    # ABOVE the photo, so the title never crosses a person's face.
+    if is_photo and portrait:
+        pill(d,w*.12,h*.217,w*.88,h*.31,
+             "#F8EFE0" if kind=="memorial" else "#FFF2F5",
+             accent,.30)
+        pill(d,w*.13,h*.628,w*.87,h*.708,
+             "#2B2135" if kind=="memorial" else "#852B66",
+             accent,.26)
+        pill(d,w*.115,h*.721,w*.885,h*.825,
+             "#FFF8EC",accent,.18)
     # Decorative photo must not obscure the editable caption blocks.
     if is_photo:
         photo_frame(can,photo,w,h,"memorial" if kind=="memorial" else "ceremony",accent)
@@ -410,18 +421,34 @@ def render_poster(pre,values,w,h,photo=None,show_photo=None):
         title_border="#FFF5DB"
     header_pos=.166
     title_pos=.421
+    sub_pos=.612
+    detail_pos=.738
+    title_height=h*.181
+    title_font=u*.159
     if is_photo and portrait:
-        title_pos=.414
+        header_pos=.157
+        title_pos=.266
+        sub_pos=.672
+        detail_pos=.773
+        title_height=h*.072
+        title_font=u*.091
+        # Gold/ivory lettering on a light title plaque.
+        title_fill="#492E24" if kind=="memorial" else "#742557"
+        title_border="#FFF5DA"
+        sub_fill="#FFF5D3"
+        sub_border="#251E3C"
+        detail_fill="#493825"
+        detail_border="#FFF8EA"
     layered_text(d,values.get("header",""),w*.5,h*header_pos,w*.56,h*.095,u*.073,
                  head_fill,head_border,formal,shadow=False)
     layered_text(d,values.get("title",""),px,h*title_pos,
-                 tw if is_photo else w*.72,h*.181,u*.159,
+                 tw if is_photo else w*.72,title_height,title_font,
                  title_fill,title_border,formal,glow=False,shadow=True)
-    layered_text(d,values.get("sub",""),px,h*.612,
-                 tw if is_photo and not portrait else w*.53,h*.083,u*.067,
+    layered_text(d,values.get("sub",""),px,h*sub_pos,
+                 tw if is_photo and not portrait else w*.53,h*.068 if is_photo and portrait else h*.083,u*.057 if is_photo and portrait else u*.067,
                  sub_fill,sub_border,False,shadow=False)
-    layered_text(d,values.get("detail",""),px,h*.738,
-                 tw if is_photo and not portrait else w*.61,h*.10,u*.050,
+    layered_text(d,values.get("detail",""),px,h*detail_pos,
+                 tw if is_photo and not portrait else w*.61,h*.088,u*.046,
                  detail_fill,detail_border,False,shadow=False)
     layered_text(d,values.get("footer",""),w*.5,h*.91,
                  w*.61,h*.064,u*.044,footer_fill,"#16264A",False,shadow=False)
