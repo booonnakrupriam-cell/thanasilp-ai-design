@@ -22,6 +22,31 @@ jobs:
         run: python -m compileall -q .
       - name: Install runtime packages for template smoke test
         run: pip install -r requirements.txt
+      - name: Smoke-test memorial print designs (landscape and portrait)
+        run: |
+          python - <<'PY'
+          from io import BytesIO
+          from PIL import Image
+          from memorial_studio import render_memorial, _output_size
+          values = {
+              "heading": "ด้วยรักและอาลัย",
+              "name": "คุณแม่ตัวอย่าง นามสกุล",
+              "born": "๕ พฤศจิกายน ๒๔๙๙",
+              "died": "๘ พฤศจิกายน ๒๕๖๙",
+              "age": "๗๐ ปี",
+              "closing": "จากครอบครัวและญาติมิตร",
+          }
+          for width,height in [(1050,700),(650,975),(1200,600)]:
+              preview=render_memorial(values,width,height)
+              assert preview.size == (width,height)
+              assert preview.getbbox() is not None
+              temp=BytesIO()
+              preview.save(temp,format="PNG")
+              assert len(temp.getvalue()) > 15000
+          px,py,dpi=_output_size(150,100,150)
+          assert 0 < px*py <= 14000000
+          print("Memorial layout and PNG export: OK")
+          PY
       - name: Smoke-test all Thai sign templates and print output
         run: |
           python - <<'PY'
