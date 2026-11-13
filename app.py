@@ -6,15 +6,26 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
-# Standalone sample sign gallery; also available inside the unified workshop.
-if st.query_params.get("studio") == "templates":
-    st.title("🎨 ธนศิลป์ • เลือกแบบป้ายแล้วพิมพ์ข้อความเอง")
+# Memorial-first stage: refine one beautiful editable sign before adding others.
+if st.query_params.get("studio") in ("templates", "memorial"):
+    st.title("🕊️ ธนศิลป์ • ทดลองแบบป้ายไว้อาลัย")
     st.link_button("🏠 กลับเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
+    try:
+        from memorial_studio import render_memorial_studio
+        render_memorial_studio()
+    except Exception as exc:
+        st.error("เปิดเครื่องมือป้ายไว้อาลัยไม่ได้: " + type(exc).__name__)
+    st.stop()
+
+# Preserve the earlier multi-category templates without showing them by default.
+if st.query_params.get("studio") == "all-templates":
+    st.title("🎨 ธนศิลป์ • แบบป้ายหมวดอื่น (รุ่นเดิม)")
+    st.link_button("🕊️ กลับแบบป้ายไว้อาลัย", "https://thanasin-ai-design.streamlit.app/?studio=memorial")
     try:
         from template_studio import render_template_studio
         render_template_studio()
     except Exception as exc:
-        st.error("เครื่องมือแบบป้ายสำเร็จรูปยังเปิดไม่ได้: " + type(exc).__name__)
+        st.error("เครื่องมือแบบป้ายเดิมเปิดไม่ได้: " + type(exc).__name__)
     st.stop()
 
 # Unified homepage entry. Existing ?studio=smart and ?studio=resize links remain valid.
@@ -24,19 +35,19 @@ if st.query_params.get("studio") == "workshop":
     unified_mode = st.radio(
         "เลือกการทำงานในหัวข้อเดียว",
         [
-            "🎨 เลือกแบบป้ายสำเร็จรูป แล้วพิมพ์ข้อความเอง",
+            "🕊️ ป้ายไว้อาลัย • เลือกแบบและพิมพ์ข้อความเอง",
             "🛡️ ปรับขนาดไม่ตัดภาพ / ให้ AI จัดองค์ประกอบใหม่",
             "🔎 อัพสเกล ปรับคม และลากเปรียบเทียบก่อน–หลัง",
         ],
         key="unified_design_mode_v2",
         horizontal=False,
     )
-    if unified_mode.startswith("🎨"):
+    if unified_mode.startswith("🕊️"):
         try:
-            from template_studio import render_template_studio
-            render_template_studio()
+            from memorial_studio import render_memorial_studio
+            render_memorial_studio()
         except Exception as exc:
-            st.error("โหลดแบบป้ายสำเร็จรูปไม่ได้: " + type(exc).__name__)
+            st.error("โหลดแบบป้ายไว้อาลัยไม่ได้: " + type(exc).__name__)
     elif unified_mode.startswith("🛡️"):
         try:
             from io import BytesIO
@@ -290,12 +301,12 @@ st.markdown("""
 
 # One unified homepage entry for both existing image workflows.
 st.link_button(
-    "🎨 เลือกแบบป้าย พิมพ์ข้อความเอง / ปรับขนาด / อัพสเกล / AI",
+    "🕊️ ทดลองป้ายอาลัยก่อน / ปรับขนาด / อัพสเกล / AI",
     "https://thanasin-ai-design.streamlit.app/?studio=workshop",
     use_container_width=True,
     type="primary",
 )
-st.caption("คลิกเลือกตัวอย่างป้ายแล้วกรอกข้อความได้ทันที รวมเครื่องมือปรับขนาด อัพสเกล และส่ง AI ไว้ในหัวข้อเดียว")
+st.caption("เริ่มทำป้ายไว้อาลัยให้สวยตรงใจก่อน • กรอกชื่อ ชาตะ มรณะ ใส่รูป และดาวน์โหลดได้ • เครื่องมืออื่นยังอยู่ครบ")
 
 def section_title(title):
     st.markdown(f'<div class="form-section-title">{html.escape(title)}</div>', unsafe_allow_html=True)
