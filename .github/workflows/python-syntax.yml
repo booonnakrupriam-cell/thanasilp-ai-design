@@ -1,4 +1,4 @@
-name: Check Python syntax
+name: Check Python syntax and template rendering
 on:
   push:
     branches: [main]
@@ -18,5 +18,28 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Reject broken Python syntax before deploy
-        run: python -m py_compile app.py print_studio.py print_preview.py interactive_sign_editor.py
+      - name: Reject Python syntax errors in all modules
+        run: python -m compileall -q .
+      - name: Install runtime packages for template smoke test
+        run: pip install -r requirements.txt
+      - name: Smoke-test all Thai sign templates and print output
+        run: |
+          python - <<'PY'
+          from io import BytesIO
+          from PIL import Image
+          from template_studio import PRESETS, _poster, _actual_size, _card_image
+          assert len(PRESETS) >= 8
+          for name, preset in PRESETS.items():
+              data = _card_image(name)
+              with Image.open(BytesIO(data)) as thumb:
+                  assert thumb.size == (720, 420), (name, thumb.size)
+              fields = {k: preset[k] for k in ("header", "title", "sub", "detail", "footer")}
+              output = _poster(preset, fields, 1000, 600)
+              assert output.size == (1000, 600), name
+              b = BytesIO()
+              output.save(b, format="PNG")
+              assert b.getbuffer().nbytes > 10000
+          w,h,dpi=_actual_size(300, 100, 150)
+          assert 0 < w*h <= 16000000
+          print("Template rendering and PNG generation: OK")
+          PY
