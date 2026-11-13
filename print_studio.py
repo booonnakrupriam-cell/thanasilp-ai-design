@@ -1021,10 +1021,11 @@ def render_print_studio():
     st.markdown("### 🖨️ ธนศิลป์ Print Studio")
     st.caption("แก้ข้อความบนภาพแบบคลิก/ลากได้จริง พร้อมเครื่องมือขยายภาพและเตรียมงานพิมพ์เดิม")
     st.info("ภาพอัปโหลดจะผ่านเซิร์ฟเวอร์ของเว็บก่อนเปิดตัวแก้ไข กรุณาได้รับอนุญาตก่อนใช้งานภาพบุคคล")
-    st.markdown("**👇 เลือกหมวดขยายภาพ / DPI เพื่อเลือกรูปแบบปรับความคมและลากเส้นก่อน–หลังได้ทันที**")
+    st.markdown("**👇 เลือกแบบป้ายสำเร็จรูปเพื่อพิมพ์ข้อความเอง หรือเลือกเครื่องมืออื่นได้ด้านล่าง**")
     mode = st.radio(
         "เลือกเครื่องมือในสตูดิโองานพิมพ์",
         [
+            "🎨 แบบป้ายสำเร็จรูป • คลิกเลือกและพิมพ์ข้อความเอง",
             "🔎 1. อัพสเกลภาพ / DPI • ปรับคมและลากก่อน–หลัง",
             "🔍 เปรียบเทียบภาพก่อน–หลังจากสองไฟล์",
             "🖱️ แก้ข้อความบนภาพแบบคลิก / ลาก",
@@ -1037,7 +1038,13 @@ def render_print_studio():
         label_visibility="collapsed",
     )
     st.divider()
-    if mode.startswith("🖱️"):
+    if mode.startswith("🎨"):
+        try:
+            from template_studio import render_template_studio
+            render_template_studio()
+        except Exception as exc:
+            st.error("เปิดคลังแบบป้ายไม่ได้: " + type(exc).__name__)
+    elif mode.startswith("🖱️"):
         try:
             from interactive_sign_editor import render_interactive_editor
             render_interactive_editor()
