@@ -22,6 +22,37 @@ jobs:
         run: python -m compileall -q .
       - name: Install runtime packages for template smoke test
         run: pip install -r requirements.txt
+      - name: Smoke-test premium memorial gallery (13 live editable layouts)
+        run: |
+          python - <<'PY'
+          from io import BytesIO
+          from PIL import Image
+          from memorial_pro_art import THEMES, render_memorial_premium
+          from memorial_pro import _thumb, _date_th, _age_on
+          from datetime import date
+          assert len(THEMES) == 13
+          text = {
+              "heading": "ด้วยรักและอาลัย",
+              "name": "คุณแม่ตัวอย่าง นามสกุล",
+              "born": "ชาตะ  ๕ พฤศจิกายน ๒๔๙๙",
+              "died": "มรณะ  ๘ พฤศจิกายน ๒๕๖๙",
+              "age": "สิริอายุ  ๗๐ ปี",
+              "closing": "ด้วยรักและระลึกถึงเสมอ",
+          }
+          for theme in THEMES:
+              portrait = theme["shape"]=="portrait"
+              width,height = (420,630) if portrait else (700,460)
+              output = render_memorial_premium(theme["id"],text,width,height)
+              assert output.size == (width,height), theme["id"]
+              f=BytesIO()
+              output.save(f,format="PNG")
+              assert f.tell()>9000, theme["id"]
+              card = _thumb(theme["id"])
+              assert len(card)>5000,theme["id"]
+          assert _age_on(date(1956,11,5),date(2026,11,8)) == 70
+          assert "๒๕๖๙" in _date_th(date(2026,11,8))
+          print("All 13 memorial templates render PNG and thumbnails correctly")
+          PY
       - name: Smoke-test memorial print designs (landscape and portrait)
         run: |
           python - <<'PY'
