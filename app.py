@@ -14,92 +14,8 @@ if st.query_params.get("studio") == "png":
     st.stop()
 
 
-# Premium memorial-only page: 13 editable templates, photo and export.
-if st.query_params.get("studio") in ("templates", "memorial"):
-    try:
-        from memorial_real import render_memorial_real
-        render_memorial_real()
-    except Exception as exc:
-        st.error("เปิดหน้าแม่แบบอาลัยสมจริงไม่ได้: " + type(exc).__name__)
-        st.caption("หากพบปัญหาสามารถเปิดหน้าเดิมได้ที่ /?studio=memorial-classic")
-    st.stop()
-
-# Preserve previous one-template memorial editor as a safe fallback.
-if st.query_params.get("studio") == "memorial-classic":
-    st.title("🕊️ ป้ายไว้อาลัยเวอร์ชันเดิม")
-    st.link_button("กลับหน้า 13 แบบ", "https://thanasin-ai-design.streamlit.app/?studio=memorial")
-    from memorial_studio import render_memorial_studio
-    render_memorial_studio()
-    st.stop()
-
-# Preserve the earlier multi-category templates without showing them by default.
-if st.query_params.get("studio") == "all-templates":
-    st.title("🎨 ธนศิลป์ • แบบป้ายหมวดอื่น (รุ่นเดิม)")
-    st.link_button("🕊️ กลับแบบป้ายไว้อาลัย", "https://thanasin-ai-design.streamlit.app/?studio=memorial")
-    try:
-        from template_studio import render_template_studio
-        render_template_studio()
-    except Exception as exc:
-        st.error("เครื่องมือแบบป้ายเดิมเปิดไม่ได้: " + type(exc).__name__)
-    st.stop()
-
-# Unified homepage entry. Existing ?studio=smart and ?studio=resize links remain valid.
-if st.query_params.get("studio") == "workshop":
-    st.title("🖼️ ธนศิลป์ • ปรับขนาด / อัพสเกล / ให้ AI ออกแบบใหม่")
-    st.link_button("🏠 กลับเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
-    unified_mode = st.radio(
-        "เลือกการทำงานในหัวข้อเดียว",
-        [
-            "🕊️ ป้ายไว้อาลัย 13 แบบ • เลือกและพิมพ์ข้อความเอง",
-            "🛡️ ปรับขนาดไม่ตัดภาพ / ให้ AI จัดองค์ประกอบใหม่",
-            "🔎 อัพสเกล ปรับคม และลากเปรียบเทียบก่อน–หลัง",
-        ],
-        key="unified_design_mode_v2",
-        horizontal=False,
-    )
-    if unified_mode.startswith("🕊️"):
-        try:
-            from memorial_real import render_memorial_real
-            render_memorial_real()
-        except Exception as exc:
-            st.error("โหลดแบบป้ายไว้อาลัยรุ่นใหม่ไม่ได้: " + type(exc).__name__)
-    elif unified_mode.startswith("🛡️"):
-        try:
-            from io import BytesIO
-            from PIL import Image, ImageOps
-            from smart_relayout import render_smart_relayout
-            unified_upload = st.file_uploader(
-                "อัปโหลดภาพป้ายต้นฉบับ PNG / JPG / TIFF",
-                type=["png", "jpg", "jpeg", "tif", "tiff"],
-                key="unified_smart_upload",
-            )
-            unified_image = None
-            if unified_upload is not None:
-                if unified_upload.name.lower().startswith(("thanasilp_no_cut", "thanasilp_smart_relayout")):
-                    st.warning("ควรอัปโหลดภาพต้นฉบับก่อนเติมขอบหรือตัดเป็นแถบ เพื่อไม่ให้ขอบและรอยตัดเดิมติดไปในงานใหม่")
-                if unified_upload.size > 30 * 1024 * 1024:
-                    st.error("ไฟล์เกิน 30 MB กรุณาลดขนาดก่อน")
-                else:
-                    try:
-                        with Image.open(BytesIO(unified_upload.getvalue())) as im:
-                            if im.width * im.height > 35_000_000:
-                                st.error("ภาพใหญ่เกิน 35 ล้านพิกเซล กรุณาลดขนาดก่อน")
-                            else:
-                                unified_image = ImageOps.exif_transpose(im).convert("RGBA")
-                    except (OSError, ValueError):
-                        st.error("เปิดภาพไม่ได้ กรุณาใช้ PNG, JPG หรือ TIFF ที่สมบูรณ์")
-            render_smart_relayout(unified_image)
-        except Exception as exc:
-            st.error("เปิดโหมดจัดองค์ประกอบใหม่ไม่ได้: " + type(exc).__name__)
-    else:
-        try:
-            from print_studio import _tool_resize
-            _tool_resize()
-        except Exception as exc:
-            st.error("เปิดโหมดอัพสเกลไม่ได้: " + type(exc).__name__)
-            st.caption("สามารถเปิดโหมดอัพสเกลเดิมแยกได้จาก https://thanasin-ai-design.streamlit.app/?studio=resize")
-    st.stop()
-
+# Retired memorial/template entry links now open the image upscale tool.
+# The main prompt builder and separate PNG converter remain available.
 # Independent Smart Re-layout entry: does not depend on the large print-studio module.
 if st.query_params.get("studio") == "smart":
     st.title("🛡️ ธนศิลป์ • เปลี่ยนขนาดไม่ตัดภาพ / ให้ AI ออกแบบใหม่ทั้งงาน")
@@ -140,7 +56,7 @@ if st.query_params.get("studio") == "smart":
     st.stop()
 
 # Direct entry to resize/DPI, sharpening presets and an immediately visible before/after slider.
-if st.query_params.get("studio") == "resize":
+if st.query_params.get("studio") in ("resize", "workshop", "templates", "memorial", "memorial-classic", "all-templates"):
     st.title("🔎 ธนศิลป์ • อัพสเกลภาพ / ปรับความคม / ลากก่อน–หลัง")
     st.link_button("🏠 กลับหน้าเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
     try:
@@ -316,12 +232,12 @@ st.markdown("""
 
 # One unified homepage entry for both existing image workflows.
 st.link_button(
-    "🕊️ ป้ายไว้อาลัย 13 แบบ / ปรับขนาด / อัพสเกล / AI",
-    "https://thanasin-ai-design.streamlit.app/?studio=workshop",
+    "🔎 อัพสเกลภาพ / ปรับความคมชัด / เปรียบเทียบก่อน–หลัง",
+    "https://thanasin-ai-design.streamlit.app/?studio=resize",
     use_container_width=True,
     type="primary",
 )
-st.caption("เริ่มทำป้ายไว้อาลัยให้สวยตรงใจก่อน • กรอกชื่อ ชาตะ มรณะ ใส่รูป และดาวน์โหลดได้ • เครื่องมืออื่นยังอยู่ครบ")
+st.caption("อัปโหลดภาพเพื่อปรับขนาดและเพิ่มความคมชัดสำหรับงานพิมพ์ พร้อมเปรียบเทียบก่อน–หลัง")
 
 def section_title(title):
     st.markdown(f'<div class="form-section-title">{html.escape(title)}</div>', unsafe_allow_html=True)
