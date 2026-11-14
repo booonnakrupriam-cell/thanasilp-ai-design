@@ -617,6 +617,7 @@ with st.expander('🔤 ฟอนต์และขอบตัวอักษร
     font_outline_global=st.selectbox('ความหนาขอบตัวอักษร',[
         'ตามความเหมาะสม','ไม่มีขอบ','ขอบบาง','ขอบปานกลาง','ขอบหนา'
     ],key='global_font_outline')
+    vector_font_enabled=st.checkbox('✅ ฟอนต์คมเหมือนเวกเตอร์ (Vector-Sharp Typography)',value=True,key='vector_font_enabled')
     st.caption('ขอบต้องเดินตามเส้นโค้งจริงของตัวอักษรแต่ละฟอนต์ ไม่วาดขอบเป็นเหลี่ยมหรือบิดรูปทรง')
 
 prompt=sign_prompt if selected_prompt_type=='ออกแบบป้าย' else build_photo_prompt() if selected_prompt_type=='แต่งภาพบุคคล' else build_graphic_prompt() if selected_prompt_type=='ออกแบบกราฟิก' else build_direct_prompt(selected_prompt_type) if selected_prompt_type in ('เสื้อพิมพ์ลาย','รูปนูน 2.5D / 3D') else build_special_prompt()
@@ -627,6 +628,17 @@ font_edge_rule=(
     'รักษาระยะขอบที่สมดุลทั้งเส้นตรงและส่วนโค้ง อ่านชัดระดับงานพิมพ์'
 )
 prompt=prompt+'\n'+font_edge_rule
+if vector_font_enabled:
+    vector_font_rule=(
+        'คุณภาพตัวอักษรระดับเวกเตอร์ (Vector-Sharp Typography / Vector Path Accuracy): '
+        'ออกแบบตัวอักษรไทยให้มีขอบคมสะอาดเรียบเนียนเหมือนเส้นเวกเตอร์ '
+        'เส้นตรงตรงจริง เส้นโค้งต่อเนื่อง ไม่แตก ไม่เป็นหยัก ไม่เบลอ ไม่เป็นขอบพิกเซล '
+        'ให้เส้นขอบ สีทึบ เงา และมิติเดินตามรูปทรง glyph จริงอย่างสม่ำเสมอ '
+        'ห้ามยืดหรือบิดฟอนต์ ห้ามให้ขอบทับสระ วรรณยุกต์ หรือช่องว่างภายในตัวอักษร '
+        'รักษาคำสะกดภาษาไทย ช ซ ด ต ถ ฮ และระยะห่างทุกตัวให้อ่านชัดเมื่อขยายเป็นป้ายขนาดใหญ่ '
+        'ขอภาพ Raster ที่คมชัดที่สุดเท่าที่ระบบรองรับ ไม่อ้างว่าเป็นไฟล์เวกเตอร์แท้ เช่น SVG/AI/EPS'
+    )
+    prompt += '\n' + vector_font_rule
 # PNG conversion remains an optional separate tool below.
 # Do not append an export/download request to every image-generation prompt.
 
