@@ -1,7 +1,7 @@
 """Thanasilp memorial gallery — thirteen original print layouts.
 
 Raster output is rendered from editable text, not from screenshots of demo posters.
-Does not include photographs, logos or material copied from Print4X.
+Does not include photographs, logos or material from other brands.
 """
 from __future__ import annotations
 import math
