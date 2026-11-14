@@ -6,15 +6,22 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
-# Memorial-first stage: refine one beautiful editable sign before adding others.
+# Premium memorial-only page: 13 editable templates, photo and export.
 if st.query_params.get("studio") in ("templates", "memorial"):
-    st.title("🕊️ ธนศิลป์ • ทดลองแบบป้ายไว้อาลัย")
-    st.link_button("🏠 กลับเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
     try:
-        from memorial_studio import render_memorial_studio
-        render_memorial_studio()
+        from memorial_pro import render_memorial_pro
+        render_memorial_pro()
     except Exception as exc:
-        st.error("เปิดเครื่องมือป้ายไว้อาลัยไม่ได้: " + type(exc).__name__)
+        st.error("เปิดหน้าป้ายไว้อาลัยรุ่นใหม่ไม่ได้: " + type(exc).__name__)
+        st.caption("หากพบปัญหาสามารถเปิดหน้าเดิมได้ที่ /?studio=memorial-classic")
+    st.stop()
+
+# Preserve previous one-template memorial editor as a safe fallback.
+if st.query_params.get("studio") == "memorial-classic":
+    st.title("🕊️ ป้ายไว้อาลัยเวอร์ชันเดิม")
+    st.link_button("กลับหน้า 13 แบบ", "https://thanasin-ai-design.streamlit.app/?studio=memorial")
+    from memorial_studio import render_memorial_studio
+    render_memorial_studio()
     st.stop()
 
 # Preserve the earlier multi-category templates without showing them by default.
@@ -35,7 +42,7 @@ if st.query_params.get("studio") == "workshop":
     unified_mode = st.radio(
         "เลือกการทำงานในหัวข้อเดียว",
         [
-            "🕊️ ป้ายไว้อาลัย • เลือกแบบและพิมพ์ข้อความเอง",
+            "🕊️ ป้ายไว้อาลัย 13 แบบ • เลือกและพิมพ์ข้อความเอง",
             "🛡️ ปรับขนาดไม่ตัดภาพ / ให้ AI จัดองค์ประกอบใหม่",
             "🔎 อัพสเกล ปรับคม และลากเปรียบเทียบก่อน–หลัง",
         ],
@@ -44,10 +51,10 @@ if st.query_params.get("studio") == "workshop":
     )
     if unified_mode.startswith("🕊️"):
         try:
-            from memorial_studio import render_memorial_studio
-            render_memorial_studio()
+            from memorial_pro import render_memorial_pro
+            render_memorial_pro()
         except Exception as exc:
-            st.error("โหลดแบบป้ายไว้อาลัยไม่ได้: " + type(exc).__name__)
+            st.error("โหลดแบบป้ายไว้อาลัยรุ่นใหม่ไม่ได้: " + type(exc).__name__)
     elif unified_mode.startswith("🛡️"):
         try:
             from io import BytesIO
@@ -301,7 +308,7 @@ st.markdown("""
 
 # One unified homepage entry for both existing image workflows.
 st.link_button(
-    "🕊️ ทดลองป้ายอาลัยก่อน / ปรับขนาด / อัพสเกล / AI",
+    "🕊️ ป้ายไว้อาลัย 13 แบบ / ปรับขนาด / อัพสเกล / AI",
     "https://thanasin-ai-design.streamlit.app/?studio=workshop",
     use_container_width=True,
     type="primary",
