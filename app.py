@@ -6,6 +6,14 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
+# Standalone PNG converter (does not change existing design tools).
+if st.query_params.get("studio") == "png":
+    from png_converter import render_png_converter
+    st.link_button("🏠 กลับเว็บไซต์หลัก", "https://thanasin-ai-design.streamlit.app/")
+    render_png_converter()
+    st.stop()
+
+
 # Premium memorial-only page: 13 editable templates, photo and export.
 if st.query_params.get("studio") in ("templates", "memorial"):
     try:
@@ -705,6 +713,9 @@ font_edge_rule=(
 prompt=prompt+'\n'+font_edge_rule
 
 
+
+st.link_button("🖼️ แปลงภาพล่าสุดเป็น PNG จริง • ไม่ลดขนาดพิกเซล", "https://thanasin-ai-design.streamlit.app/?studio=png", use_container_width=True)
+st.caption("บันทึกภาพจาก ChatGPT/Gemini แล้วอัปโหลดเพื่อแปลงเป็นไฟล์ .png สำหรับดาวน์โหลด")
 
 section_title('7. ส่งคำสั่งไปสร้างภาพ')
 st.caption('คำสั่งของคุณอยู่ในช่องด้านล่าง สามารถคลิกแล้วกด Ctrl+A และ Ctrl+C เพื่อคัดลอกได้ทันที')
