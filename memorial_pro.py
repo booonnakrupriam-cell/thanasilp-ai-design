@@ -146,6 +146,9 @@ def render_memorial_pro():
       <div class="mem-count">13 ดีไซน์ · แนวนอนและแนวตั้ง</div>
     </section>
     """,unsafe_allow_html=True)
+    st.link_button("⌂ กลับหน้าเว็บไซต์ธนศิลป์ AI Design",
+                   "https://thanasin-ai-design.streamlit.app/",
+                   use_container_width=False)
     st.write("")
     features=[
         ("✍️ กรอกชื่อและวันที่","แก้ข้อความจริง ไม่ต้องสร้างภาพใหม่ทุกครั้ง"),
