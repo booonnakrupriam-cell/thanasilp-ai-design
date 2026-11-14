@@ -9,10 +9,10 @@ st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠
 # Premium memorial-only page: 13 editable templates, photo and export.
 if st.query_params.get("studio") in ("templates", "memorial"):
     try:
-        from memorial_pro import render_memorial_pro
-        render_memorial_pro()
+        from memorial_real import render_memorial_real
+        render_memorial_real()
     except Exception as exc:
-        st.error("เปิดหน้าป้ายไว้อาลัยรุ่นใหม่ไม่ได้: " + type(exc).__name__)
+        st.error("เปิดหน้าแม่แบบอาลัยสมจริงไม่ได้: " + type(exc).__name__)
         st.caption("หากพบปัญหาสามารถเปิดหน้าเดิมได้ที่ /?studio=memorial-classic")
     st.stop()
 
@@ -51,8 +51,8 @@ if st.query_params.get("studio") == "workshop":
     )
     if unified_mode.startswith("🕊️"):
         try:
-            from memorial_pro import render_memorial_pro
-            render_memorial_pro()
+            from memorial_real import render_memorial_real
+            render_memorial_real()
         except Exception as exc:
             st.error("โหลดแบบป้ายไว้อาลัยรุ่นใหม่ไม่ได้: " + type(exc).__name__)
     elif unified_mode.startswith("🛡️"):
