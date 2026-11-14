@@ -639,8 +639,9 @@ if vector_font_enabled:
         'ขอภาพ Raster ที่คมชัดที่สุดเท่าที่ระบบรองรับ ไม่อ้างว่าเป็นไฟล์เวกเตอร์แท้ เช่น SVG/AI/EPS'
     )
     prompt += '\n' + vector_font_rule
-# PNG conversion remains an optional separate tool below.
-# Do not append an export/download request to every image-generation prompt.
+# Include the PNG request in every generated prompt, regardless of category.
+PNG_EXPORT_REQUEST = "ช่วยแปลงภาพล่าสุดที่สร้างเป็นไฟล์ PNG จริง (.png) โดยรักษาขนาดพิกเซลและคุณภาพเดิม แล้วแนบลิงก์ดาวน์โหลด PNG ให้ด้วย"
+prompt += "\n\n" + PNG_EXPORT_REQUEST
 
 
 
@@ -650,6 +651,9 @@ st.caption("บันทึกภาพจาก ChatGPT/Gemini แล้วอ�
 section_title('7. ส่งคำสั่งไปสร้างภาพ')
 st.caption('คำสั่งของคุณอยู่ในช่องด้านล่าง สามารถคลิกแล้วกด Ctrl+A และ Ctrl+C เพื่อคัดลอกได้ทันที')
 st.text_area('คำสั่งพร้อมใช้ (คัดลอกได้)',value=prompt,height=260,key=f'prompt_display_{hash(prompt)}')
+st.markdown("**📥 ข้อความขอไฟล์ PNG ที่เพิ่มใต้ทุกพรอมต์:**")
+st.code(PNG_EXPORT_REQUEST, language=None)
+st.caption("ข้อความนี้รวมอยู่ในคำสั่งที่คัดลอกหรือส่งไป ChatGPT / Gemini / Meta AI ทุกหมวดแล้ว ทั้งนี้การแนบ PNG ขึ้นอยู่กับความสามารถของ AI ปลายทาง")
 
 # Additional mobile-friendly copy button; original buttons remain unchanged.
 safe_mobile_prompt=html.escape(prompt,quote=True)
