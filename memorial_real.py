@@ -72,11 +72,21 @@ def _open_pack(pack):
                 with Image.open(BytesIO(archive.read(filename))) as im:
                     if im.width * im.height > MAX_FILE_PIXELS:
                         raise ValueError("พิกเซลภาพแม่แบบใหญ่เกินไป")
-                    thumb = im.copy().convert("RGB")
-                    thumb.thumbnail((680, 450), Image.Resampling.LANCZOS)
-                    out = BytesIO()
-                    thumb.save(out, format="JPEG", quality=86)
-                    cards[key] = out.getvalue()
+                    preview_name = "preview_" + key + ".jpg"
+                    if preview_name in entries:
+                        thumb_bytes=archive.read(preview_name)
+                        # Validate thumbnails before displaying submitted ZIP bytes.
+                        with Image.open(BytesIO(thumb_bytes)) as thumb_source:
+                            if thumb_source.width*thumb_source.height>1_200_000:
+                                raise ValueError("ภาพตัวอย่างมีขนาดใหญ่เกินไป")
+                            thumb_source.verify()
+                        cards[key]=thumb_bytes
+                    else:
+                        thumb = im.copy().convert("RGB")
+                        thumb.thumbnail((680, 450), Image.Resampling.LANCZOS)
+                        out = BytesIO()
+                        thumb.save(out, format="JPEG", quality=86)
+                        cards[key] = out.getvalue()
             return metadata, cards
     except (BadZipFile, KeyError, TypeError, json.JSONDecodeError, OSError) as exc:
         raise ValueError("เปิดไฟล์ ZIP ไม่สำเร็จ กรุณาใช้ไฟล์แม่แบบธนศิลป์ที่ดาวน์โหลดไว้") from exc
@@ -280,6 +290,8 @@ def render_memorial_real():
         _choose_real("ivory_gold")
     current=st.session_state["rmp_selected"]
     st.markdown('<div class="real-title">ขั้นตอนที่ 2 · คลิกเลือกแบบ</div>',unsafe_allow_html=True)
+    st.caption("ภาพบุคคลในตัวอย่างเป็นภาพจำลองที่สร้างด้วย AI สำหรับดูดีไซน์เท่านั้น "
+               "ไม่ใช่รูปของลูกค้า และไม่ถูกนำไปใส่ในไฟล์ส่งออกของคุณ")
     group=st.radio("เลือกดู",["ทั้งหมด 13 แบบ","แนวนอน 9 แบบ","แนวตั้ง 4 แบบ"],
         key="rmp_view_mode",horizontal=True)
     options=(THEMES if group.startswith("ทั้งหมด") else
