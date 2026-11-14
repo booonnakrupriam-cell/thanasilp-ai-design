@@ -22,6 +22,43 @@ jobs:
         run: python -m compileall -q .
       - name: Install runtime packages for template smoke test
         run: pip install -r requirements.txt
+      - name: Smoke-test photoreal memorial ZIP loader and artwork compositor
+        run: |
+          python - <<'PY'
+          from io import BytesIO
+          from zipfile import ZipFile, ZIP_DEFLATED
+          import json
+          from PIL import Image
+          from memorial_real import _open_pack, _draw_sign, _add_portrait
+          from memorial_pro_art import THEMES
+          # Test the real ZIP format with synthetic image bytes (no art packaged in source)
+          content=BytesIO()
+          mapping={}
+          with ZipFile(content,"w",ZIP_DEFLATED) as z:
+              for t in THEMES:
+                  key=t["id"]
+                  width,height=((300,450) if t["shape"]=="portrait" else (450,300))
+                  image=Image.new("RGB",(width,height),"#F1E3CB")
+                  raw=BytesIO()
+                  image.save(raw,format="PNG")
+                  z.writestr(key+".png",raw.getvalue())
+                  mapping[key]={"file":key+".png","title":t["title"],"shape":t["shape"],
+                     "ink":"#32213A","photo_oval":[.12,.16,.35,.69]}
+              z.writestr("manifest.json",json.dumps({"pack_version":2,"templates":mapping}))
+          pack=content.getvalue()
+          meta,cards=_open_pack(pack)
+          assert len(cards)==13
+          layout={"heading":"ด้วยรักและอาลัย","name":"คุณแม่ตัวอย่าง นามสกุล",
+              "born":"ชาตะ  ๕ พฤศจิกายน ๒๔๙๙","died":"มรณะ  ๘ พฤศจิกายน ๒๕๖๙",
+              "age":"สิริอายุ  ๗๐ ปี","closing":"ด้วยรักและคิดถึงเสมอ"}
+          for t in THEMES:
+              target=(700,1000) if t["shape"]=="portrait" else (1100,700)
+              source=Image.new("RGBA",(300,450) if t["shape"]=="portrait" else (450,300),"#F1E3CB")
+              photo=Image.new("RGB",(350,460),"#8BC2E6")
+              result=_draw_sign(source,t["id"],meta["templates"][t["id"]],layout,target,photo)
+              assert result.size==target
+          print("Photoreal ZIP loader, 13 cards, text/photo compositor: OK")
+          PY
       - name: Smoke-test premium memorial gallery (13 live editable layouts)
         run: |
           python - <<'PY'
