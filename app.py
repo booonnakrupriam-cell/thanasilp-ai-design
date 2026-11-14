@@ -711,6 +711,12 @@ font_edge_rule=(
     'รักษาระยะขอบที่สมดุลทั้งเส้นตรงและส่วนโค้ง อ่านชัดระดับงานพิมพ์'
 )
 prompt=prompt+'\n'+font_edge_rule
+# Request original-pixel PNG export in all prompt categories.
+png_export_instruction = (
+    "ช่วยแปลงภาพล่าสุดที่สร้างเป็นไฟล์ PNG จริง (.png) "
+    "โดยรักษาขนาดพิกเซลและคุณภาพเดิม แล้วแนบลิงก์ดาวน์โหลด PNG ให้ด้วย"
+)
+prompt = prompt + "\n\n" + png_export_instruction
 
 
 
