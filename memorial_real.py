@@ -13,6 +13,7 @@ from hashlib import sha256
 from io import BytesIO
 import json
 import math
+from pathlib import Path
 from zipfile import ZipFile, BadZipFile
 
 import streamlit as st
@@ -79,6 +80,29 @@ def _open_pack(pack):
             return metadata, cards
     except (BadZipFile, KeyError, TypeError, json.JSONDecodeError, OSError) as exc:
         raise ValueError("เปิดไฟล์ ZIP ไม่สำเร็จ กรุณาใช้ไฟล์แม่แบบธนศิลป์ที่ดาวน์โหลดไว้") from exc
+
+def _pack_from_repository():
+    """Prefer an installed permanent template pack, if present in the repository.
+
+    A user can later copy the 13 PNG files plus manifest.json into
+    assets/memorial_real/; no app-code changes are needed after that.
+    """
+    folder=Path(__file__).resolve().parent/"assets"/"memorial_real"
+    if not (folder/"manifest.json").is_file():
+        return None
+    files=["manifest.json"]+[key+".png" for key in THEME_IDS]
+    if not all((folder/name).is_file() for name in files):
+        return None
+    data=BytesIO()
+    from zipfile import ZIP_STORED
+    with ZipFile(data,"w",compression=ZIP_STORED) as z:
+        for name in files:
+            p=folder/name
+            if p.stat().st_size>12*1024*1024:
+                return None
+            z.write(p,arcname=name)
+    return data.getvalue()
+
 
 @st.cache_data(show_spinner=False,max_entries=4)
 def _cached_pack(pack):
@@ -227,17 +251,26 @@ def render_memorial_real():
       unsafe_allow_html=True)
     st.link_button("🏠 กลับหน้าหลัก","https://thanasin-ai-design.streamlit.app/")
     st.markdown('<div class="real-title">ขั้นตอนที่ 1 · เปิดชุดแม่แบบสมจริง</div>',unsafe_allow_html=True)
-    st.markdown("""<div class="real-note">ดาวน์โหลดไฟล์ <b>thanasilp_memorial_real_pack_13.zip</b>
-      ที่จัดเตรียมไว้ในบทสนทนา ChatGPT นี้ แล้วอัปโหลด ZIP ที่นี่ <b>ครั้งเดียวต่อการใช้งาน</b>
-      (รูปบุคคลให้ใส่แยกในขั้นตอนที่ 3) ชุดนี้เป็นภาพต้นฉบับที่สร้างใหม่
-      ไม่ใช้ภาพหรือข้อมูลของลูกค้าเก่าครับ</div>""",unsafe_allow_html=True)
-    uploaded_pack=st.file_uploader("📦 อัปโหลด ZIP แม่แบบจริงทั้ง 13 แบบ",
-        type=["zip"],key="rmp_pack_v1",help="รองรับไฟล์แม่แบบที่ดาวน์โหลดจากบทสนทนานี้ ไม่รองรับ ZIP จากแหล่งอื่น")
-    if uploaded_pack is None:
-        st.warning("ยังไม่ได้เปิดชุดแม่แบบสมจริง จึงไม่แสดงตัวอย่างกรอบการ์ตูนเก่าอีก กรุณาอัปโหลดไฟล์ ZIP เพื่อเริ่มเลือกแบบจริง")
-        return
-    try:
+    installed_pack=_pack_from_repository()
+    if installed_pack is not None:
+        st.success("ใช้แม่แบบสมจริง 13 แบบที่ติดตั้งไว้บนเว็บไซต์แล้ว")
+        pack=installed_pack
+    else:
+        st.markdown("""<div class="real-note">ดาวน์โหลดไฟล์
+          <b>thanasilp_memorial_real_pack_13.zip</b> จากคำตอบ ChatGPT นี้
+          แล้วอัปโหลดทั้ง ZIP ที่นี่ <b>ครั้งเดียวต่อเซสชัน</b>
+          เพื่อเปิดกรอบทองและดอกไม้สมจริงทั้ง 13 แบบ
+          รูปผู้ล่วงลับให้แนบแยกในขั้นตอนที่ 3
+          </div>""",unsafe_allow_html=True)
+        uploaded_pack=st.file_uploader("📦 อัปโหลด ZIP แม่แบบจริงทั้ง 13 แบบ",
+            type=["zip"],key="rmp_pack_v1",
+            help="รองรับชุดแม่แบบธนศิลป์ที่สร้างให้ในบทสนทนานี้")
+        if uploaded_pack is None:
+            st.warning("ยังไม่พบไฟล์ภาพสมจริงบนเว็บไซต์ จึงซ่อนภาพตัวอย่างกรอบแบบเดิม "
+                       "กรุณาอัปโหลด ZIP แม่แบบเพื่อเริ่มออกแบบ")
+            return
         pack=uploaded_pack.getvalue()
+    try:
         manifest,cards=_cached_pack(pack)
     except (ValueError,RuntimeError) as exc:
         st.error(str(exc))
