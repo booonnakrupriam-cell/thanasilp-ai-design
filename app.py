@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 import streamlit as st
 import streamlit.components.v1 as components
+from photo_presets import GROUPS as PHOTO_PRESET_GROUPS, options_for as photo_preset_options, preset_instruction
 
 st.set_page_config(page_title="ธนศิลป์ AI Design", page_icon="🟠", layout="wide")
 
@@ -302,12 +303,25 @@ with tab_photo:
     photo_details=st.text_area('รายละเอียดภาพที่ต้องการ เช่น ชุด สถานที่ จำนวนคน ฉากหลัง',height=110,key='photo_details')
     photo_ratio=st.selectbox('สัดส่วนภาพ',['คงสัดส่วนต้นฉบับ','3:4 แนวตั้ง','4:3 แนวนอน','1:1 สี่เหลี่ยม','9:16 แนวตั้ง','16:9 แนวนอน'],key='photo_ratio')
     photo_real=st.checkbox('รักษาใบหน้าและเอกลักษณ์บุคคลตามภาพต้นฉบับ',value=True,key='photo_real')
+    st.markdown("#### 🎨 คลังเอฟเฟกต์แต่งภาพ 100 แบบ")
+    photo_preset_category=st.selectbox("หมวดเอฟเฟกต์สำหรับบุคคล",PHOTO_PRESET_GROUPS,key="photo_preset_category")
+    photo_preset_map=photo_preset_options(PHOTO_PRESET_GROUPS.index(photo_preset_category),mode="photo")
+    photo_preset_choice=st.selectbox("เอฟเฟกต์ที่ต้องการ",["ไม่ใช้เอฟเฟกต์เพิ่มเติม"]+list(photo_preset_map),key="photo_preset_choice")
+    photo_selected_preset=photo_preset_map.get(photo_preset_choice)
+    st.caption("ใช้รูปต้นฉบับเป็นหลัก • รหัส / เป็นชื่อสไตล์ ไม่ใช่คำสั่งพิเศษของ ChatGPT หรือ Gemini")
+
     st.caption('ภาพ AI อาจไม่เหมือนต้นฉบับทุกจุด และต้องแนบภาพบุคคลด้วยตนเองในบริการ AI ที่เลือก')
 with tab_graphic:
     st.markdown('### ✨ ออกแบบกราฟิก')
     graphic_task=st.selectbox('ประเภทงานกราฟิก',['ออกแบบโลโก้','ออกแบบกรอบ QR Code','ออกแบบป้ายขายของ','ออกแบบตารางเรียน / ตารางกิจกรรม','ออกแบบงานกราฟิกอื่น ๆ'],key='graphic_task')
     graphic_text=st.text_area('ข้อความ / รายการ / ชื่อร้าน / ตารางเรียน',height=130,key='graphic_text')
     graphic_details=st.text_area('รายละเอียด สี รูปแบบ ขนาด และข้อมูลอื่น ๆ',height=95,key='graphic_details')
+    st.markdown("#### 🖼️ เอฟเฟกต์ภาพสินค้า ฉากหลัง และสี")
+    graphic_preset_category=st.selectbox("หมวดเอฟเฟกต์กราฟิก",PHOTO_PRESET_GROUPS[1:],key="graphic_preset_category")
+    graphic_preset_map=photo_preset_options(PHOTO_PRESET_GROUPS.index(graphic_preset_category),mode="graphic")
+    graphic_preset_choice=st.selectbox("เอฟเฟกต์ที่ต้องการ",["ไม่ใช้เอฟเฟกต์เพิ่มเติม"]+list(graphic_preset_map),key="graphic_preset_choice")
+    graphic_selected_preset=graphic_preset_map.get(graphic_preset_choice)
+
     if graphic_task=='ออกแบบกรอบ QR Code':
         st.info('เพื่อให้สแกนได้จริง ให้นำ QR Code ที่สร้างจากลิงก์จริงมาใส่ในกรอบที่ออกแบบ ไม่ใช้ QR Code ที่ AI วาดขึ้น')
 
@@ -628,6 +642,12 @@ font_edge_rule=(
     'รักษาระยะขอบที่สมดุลทั้งเส้นตรงและส่วนโค้ง อ่านชัดระดับงานพิมพ์'
 )
 prompt=prompt+'\n'+font_edge_rule
+# Append selected preset only for its corresponding image mode.
+if selected_prompt_type == 'แต่งภาพบุคคล' and photo_selected_preset is not None:
+    prompt += '\n\n' + preset_instruction(photo_selected_preset, keep_identity=photo_real)
+elif selected_prompt_type == 'ออกแบบกราฟิก' and graphic_selected_preset is not None:
+    prompt += '\n\n' + preset_instruction(graphic_selected_preset, keep_identity=True)
+
 if vector_font_enabled:
     vector_font_rule=(
         'คุณภาพตัวอักษรระดับเวกเตอร์ (Vector-Sharp Typography / Vector Path Accuracy): '
