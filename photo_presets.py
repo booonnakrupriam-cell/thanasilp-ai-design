@@ -2,7 +2,7 @@
 Codes are labels for prompt instructions, not API commands.
 Duplicate codes are disambiguated by numbered labels.
 """
-GROUPS = ["👤 Portrait & People","🌿 Nature & Landscape","🖼️ Backgrounds & Objects","✨ Special & Unique"]
+GROUPS = ["👤 Portrait & People — แต่งภาพบุคคลและรีทัชผิว","🌿 Nature & Landscape — ธรรมชาติ วิวและจัดแสง","🖼️ Backgrounds & Objects — ฉากหลัง ลบวัตถุและปรับสี","✨ Special & Unique — ภาพสินค้า โซเชียลและสไตล์พิเศษ"]
 PRESETS = [
     (0, 1, "cinematicportrait", "ภาพบุคคลโทนหนังโรงสุดเท่"),
     (0, 2, "idollook", "แต่งลุคไอดอลเกาหลี"),
